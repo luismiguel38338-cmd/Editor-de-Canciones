@@ -1,0 +1,6 @@
+{
+  "name": "Editor de Canciones",
+  "description": "Editor de audio con reproductor Media3 ExoPlayer, ajuste de velocidad y tono en tiempo real y exportación de copias.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

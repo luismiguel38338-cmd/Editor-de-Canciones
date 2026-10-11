@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Editor de Canciones</string>
+    <string name="permission_audio_title">Permiso de Acceso a Audio</string>
+    <string name="permission_audio_desc">Para mostrar y editar tus canciones locales, necesitamos permiso para acceder a los archivos de audio de tu dispositivo.</string>
+    <string name="grant_permission">Conceder Permiso</string>
+    <string name="open_settings">Abrir Ajustes</string>
+    <string name="search_songs_placeholder">Buscar canción o artista…</string>
+    <string name="no_songs_found">No se encontraron canciones</string>
+    <string name="no_songs_desc">No hay canciones en tu biblioteca o no se han sincronizado aún.</string>
+    <string name="pick_audio_file">Seleccionar archivo de audio</string>
+    <string name="load_sample_tracks">Cargar pistas de prueba</string>
+    <string name="track_editor_title">Estudio de Edición</string>
+    <string name="speed_label">Velocidad</string>
+    <string name="pitch_label">Tono (Pitch)</string>
+    <string name="reset_effects">Restablecer</string>
+    <string name="save_modified_copy">Guardar Copia Modificada</string>
+    <string name="saving_audio">Procesando y guardando copia…</string>
+    <string name="saved_successfully">¡Copia guardada con éxito en Música!</string>
+    <string name="save_error">Error al guardar el archivo de audio</string>
+    <string name="original_file_safe">El archivo original permanece intacto</string>
+    <string name="tab_all_songs">Canciones</string>
+    <string name="tab_saved_edits">Mis Ediciones</string>
+    <string name="unknown_artist">Artista Desconocido</string>
+    <string name="unknown_title">Canción sin título</string>
+    <string name="semitones_format">%+d semitonos</string>
+    <string name="speed_format">%.2fx</string>
+    <string name="pitch_factor_format">%.2fx tono</string>
+</resources>
