@@ -126,21 +126,6 @@ fun SongItem(
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                         )
                     }
-                } else if (song.isSample) {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Surface(
-                        color = StudioCobalt.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(4.dp),
-                        border = androidx.compose.foundation.BorderStroke(0.5.dp, StudioCobalt.copy(alpha = 0.4f))
-                    ) {
-                        Text(
-                            text = "DEMO",
-                            color = StudioCobalt,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                        )
-                    }
                 }
             }
 

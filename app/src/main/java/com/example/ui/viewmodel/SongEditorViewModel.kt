@@ -1,33 +1,33 @@
 package com.example.ui.viewmodel
 
 import android.app.Application
+import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.media3.common.MediaItem
-import androidx.media3.common.PlaybackParameters
-import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
 import com.example.audio.AudioExporter
 import com.example.audio.EqualizerConfig
-import com.example.audio.LiveAudioEffectsManager
+import com.example.audio.MusicPlayerManager
+import com.example.audio.PlayerRepeatMode
+import com.example.audio.PlayerState
 import com.example.data.model.ExportedTrack
 import com.example.data.model.Song
 import com.example.data.repository.ExportsRepository
 import com.example.data.repository.SongRepository
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import com.example.service.PlaybackService
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.io.File
-import kotlin.math.pow
 
 enum class NavigationTab {
     LIBRARY,
+    PLAYER,
     EDITOR,
     EXPORTS,
     SETTINGS
@@ -36,7 +36,9 @@ enum class NavigationTab {
 enum class LibrarySortOrder {
     TITLE,
     ARTIST,
-    DURATION
+    ALBUM,
+    DURATION,
+    FAVORITES
 }
 
 data class SongEditorUiState(
@@ -47,89 +49,73 @@ data class SongEditorUiState(
     val exportedTracks: List<ExportedTrack> = emptyList(),
     val sortOrder: LibrarySortOrder = LibrarySortOrder.TITLE,
     val searchQuery: String = "",
-    val selectedSong: Song? = null,
-    val isPlaying: Boolean = false,
-    val currentPositionMs: Long = 0L,
-    val totalDurationMs: Long = 0L,
-    val volume: Float = 1.0f,
-    val speed: Float = 1.0f,
-    val semitones: Int = 0,
-    val equalizerConfig: EqualizerConfig = EqualizerConfig(),
-    val isLooping: Boolean = false,
+    val playerState: PlayerState = PlayerState(),
     val isSaving: Boolean = false,
     val saveProgress: Float = 0f,
     val saveSuccessMessage: String? = null,
     val errorMessage: String? = null,
     val infoMessage: String? = null
 ) {
-    val pitchFactor: Float
-        get() = (2.0).pow(semitones / 12.0).toFloat()
-
     val filteredSongs: List<Song>
         get() {
             var list = if (searchQuery.isBlank()) songs else {
                 songs.filter {
                     it.title.contains(searchQuery, ignoreCase = true) ||
-                            it.artist.contains(searchQuery, ignoreCase = true)
+                            it.artist.contains(searchQuery, ignoreCase = true) ||
+                            it.album.contains(searchQuery, ignoreCase = true)
                 }
             }
 
             return when (sortOrder) {
                 LibrarySortOrder.TITLE -> list.sortedBy { it.title.lowercase() }
                 LibrarySortOrder.ARTIST -> list.sortedBy { it.artist.lowercase() }
+                LibrarySortOrder.ALBUM -> list.sortedBy { it.album.lowercase() }
                 LibrarySortOrder.DURATION -> list.sortedByDescending { it.durationMs }
+                LibrarySortOrder.FAVORITES -> list.sortedWith(compareByDescending<Song> { it.isFavorite }.thenBy { it.title.lowercase() })
             }
         }
+
+    val selectedSong: Song? get() = playerState.currentSong
+    val isPlaying: Boolean get() = playerState.isPlaying
+    val currentPositionMs: Long get() = playerState.currentPositionMs
+    val totalDurationMs: Long get() = playerState.totalDurationMs
+    val speed: Float get() = playerState.speed
+    val semitones: Int get() = playerState.semitones
+    val equalizerConfig: EqualizerConfig get() = playerState.equalizerConfig
 }
 
 class SongEditorViewModel(application: Application) : AndroidViewModel(application) {
 
     private val songRepository = SongRepository(application)
     private val exportsRepository = ExportsRepository(application)
-    private val liveAudioEffects = LiveAudioEffectsManager()
-
-    private var exoPlayer: ExoPlayer? = null
+    val playerManager = MusicPlayerManager.getInstance(application)
 
     private val _uiState = MutableStateFlow(SongEditorUiState())
-    val uiState: StateFlow<SongEditorUiState> = _uiState.asStateFlow()
-
-    private var progressTrackingJob: Job? = null
+    val uiState: StateFlow<SongEditorUiState> = combine(
+        _uiState,
+        playerManager.playerState
+    ) { currentUiState, currentPlayerState ->
+        currentUiState.copy(playerState = currentPlayerState)
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        _uiState.value
+    )
 
     init {
-        initializePlayer()
+        startPlaybackService()
         loadExports()
     }
 
-    private fun initializePlayer() {
-        if (exoPlayer != null) return
-
-        exoPlayer = ExoPlayer.Builder(getApplication()).build().apply {
-            addListener(object : Player.Listener {
-                override fun onIsPlayingChanged(isPlaying: Boolean) {
-                    _uiState.update { it.copy(isPlaying = isPlaying) }
-                    if (isPlaying) {
-                        startProgressTracking()
-                    } else {
-                        stopProgressTracking()
-                    }
-                }
-
-                override fun onPlaybackStateChanged(playbackState: Int) {
-                    if (playbackState == Player.STATE_READY) {
-                        _uiState.update {
-                            it.copy(
-                                totalDurationMs = duration.coerceAtLeast(0L)
-                            )
-                        }
-                        liveAudioEffects.attachToSession(audioSessionId)
-                        liveAudioEffects.applyConfig(_uiState.value.equalizerConfig)
-                    } else if (playbackState == Player.STATE_ENDED) {
-                        _uiState.update { it.copy(isPlaying = false, currentPositionMs = it.totalDurationMs) }
-                        stopProgressTracking()
-                    }
-                }
-            })
-        }
+    private fun startPlaybackService() {
+        try {
+            val intent = Intent(getApplication(), PlaybackService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                getApplication<Application>().startForegroundService(intent)
+            } else {
+                getApplication<Application>().startService(intent)
+            }
+        } catch (_: Exception) {}
     }
 
     fun navigateTo(tab: NavigationTab) {
@@ -143,8 +129,6 @@ class SongEditorViewModel(application: Application) : AndroidViewModel(applicati
         _uiState.update { it.copy(permissionGranted = granted) }
         if (granted) {
             loadSongs()
-        } else {
-            loadSampleTracksOnly()
         }
     }
 
@@ -152,29 +136,13 @@ class SongEditorViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             val mediaStoreSongs = songRepository.getDeviceSongs()
-            val sampleSongs = if (mediaStoreSongs.isEmpty()) songRepository.generateSampleTracks() else emptyList()
-            val allSongs = mediaStoreSongs + sampleSongs
-
             _uiState.update {
                 it.copy(
                     isLoading = false,
-                    songs = allSongs
+                    songs = mediaStoreSongs
                 )
             }
             loadExports()
-        }
-    }
-
-    fun loadSampleTracksOnly() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            val samples = songRepository.generateSampleTracks()
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    songs = samples
-                )
-            }
         }
     }
 
@@ -193,148 +161,141 @@ class SongEditorViewModel(application: Application) : AndroidViewModel(applicati
         _uiState.update { it.copy(sortOrder = order) }
     }
 
-    fun selectSong(song: Song, autoOpenEditor: Boolean = true) {
-        _uiState.update {
-            it.copy(
-                selectedSong = song,
-                currentPositionMs = 0L,
-                totalDurationMs = song.durationMs,
-                currentTab = if (autoOpenEditor) NavigationTab.EDITOR else it.currentTab,
-                saveSuccessMessage = null,
-                errorMessage = null
-            )
-        }
-
-        exoPlayer?.let { player ->
-            player.stop()
-            player.clearMediaItems()
-            val mediaItem = MediaItem.fromUri(song.uri)
-            player.setMediaItem(mediaItem)
-            player.playbackParameters = PlaybackParameters(_uiState.value.speed, _uiState.value.pitchFactor)
-            player.repeatMode = if (_uiState.value.isLooping) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
-            player.volume = _uiState.value.volume
-            player.prepare()
-            player.playWhenReady = true
-        }
-    }
-
-    fun togglePlayPause() {
-        exoPlayer?.let { player ->
-            if (player.isPlaying) {
-                player.pause()
-            } else {
-                if (player.playbackState == Player.STATE_ENDED) {
-                    player.seekTo(0)
-                }
-                player.play()
+    fun toggleFavorite(song: Song) {
+        val isFav = songRepository.toggleFavorite(song.id)
+        _uiState.update { state ->
+            val updated = state.songs.map {
+                if (it.id == song.id) it.copy(isFavorite = isFav) else it
             }
+            state.copy(songs = updated)
         }
     }
 
-    fun seekTo(positionMs: Long) {
-        exoPlayer?.seekTo(positionMs)
-        _uiState.update { it.copy(currentPositionMs = positionMs) }
-    }
-
-    fun skipForward(seconds: Int = 5) {
-        exoPlayer?.let { player ->
-            val target = (player.currentPosition + seconds * 1000).coerceAtMost(player.duration)
-            player.seekTo(target)
-            _uiState.update { it.copy(currentPositionMs = target) }
+    // Acciones de reproducción y cola
+    fun playSong(song: Song, autoOpenPlayer: Boolean = false) {
+        val queue = _uiState.value.filteredSongs
+        playerManager.playSong(song, queue)
+        if (autoOpenPlayer) {
+            navigateTo(NavigationTab.PLAYER)
         }
     }
 
-    fun skipBackward(seconds: Int = 5) {
-        exoPlayer?.let { player ->
-            val target = (player.currentPosition - seconds * 1000).coerceAtLeast(0)
-            player.seekTo(target)
-            _uiState.update { it.copy(currentPositionMs = target) }
+    fun selectSong(song: Song, autoOpenEditor: Boolean = false, autoOpenPlayer: Boolean = false) {
+        val queue = _uiState.value.filteredSongs
+        playerManager.playSong(song, queue)
+        if (autoOpenEditor) {
+            navigateTo(NavigationTab.EDITOR)
+        } else if (autoOpenPlayer) {
+            navigateTo(NavigationTab.PLAYER)
         }
     }
 
     fun toggleLoop() {
-        val newLoop = !_uiState.value.isLooping
-        _uiState.update { it.copy(isLooping = newLoop) }
-        exoPlayer?.repeatMode = if (newLoop) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
+        playerManager.toggleRepeatMode()
     }
 
-    fun setVolume(vol: Float) {
-        val clamped = vol.coerceIn(0f, 1f)
-        _uiState.update { it.copy(volume = clamped) }
-        exoPlayer?.volume = clamped
+    fun togglePlayPause() {
+        playerManager.togglePlayPause()
     }
 
-    // Real-time speed adjustment (0.50x to 2.00x)
-    fun setSpeed(newSpeed: Float) {
-        val clamped = (Math.round(newSpeed * 20.0) / 20.0).toFloat().coerceIn(0.5f, 2.0f)
-        _uiState.update { it.copy(speed = clamped) }
-        applyPlaybackParameters()
+    fun skipToNext() {
+        playerManager.skipToNext()
     }
 
-    // Real-time pitch adjustment in semitones (-12 to +12)
-    fun setSemitones(newSemitones: Int) {
-        val clamped = newSemitones.coerceIn(-12, 12)
-        _uiState.update { it.copy(semitones = clamped) }
-        applyPlaybackParameters()
+    fun skipToPrevious() {
+        playerManager.skipToPrevious()
+    }
+
+    fun seekTo(positionMs: Long) {
+        playerManager.seekTo(positionMs)
+    }
+
+    fun skipForward(seconds: Int = 5) {
+        playerManager.skipForward(seconds)
+    }
+
+    fun skipBackward(seconds: Int = 5) {
+        playerManager.skipBackward(seconds)
+    }
+
+    fun toggleRepeatMode() {
+        playerManager.toggleRepeatMode()
+    }
+
+    fun toggleShuffle() {
+        playerManager.toggleShuffle()
+    }
+
+    fun addToQueue(song: Song) {
+        playerManager.addToQueue(song)
+        _uiState.update { it.copy(infoMessage = "Añadida a la cola: ${song.title}") }
+    }
+
+    fun removeFromQueue(index: Int) {
+        playerManager.removeFromQueue(index)
+    }
+
+    fun reorderQueue(fromIndex: Int, toIndex: Int) {
+        playerManager.reorderQueue(fromIndex, toIndex)
+    }
+
+    fun setSleepTimer(minutes: Int?) {
+        playerManager.setSleepTimerMinutes(minutes)
+        val msg = if (minutes != null) "Temporizador de apagado configurado para $minutes minutos" else "Temporizador de apagado cancelado"
+        _uiState.update { it.copy(infoMessage = msg) }
+    }
+
+    // Efectos de audio en tiempo real
+    fun setSpeed(speed: Float) {
+        playerManager.setSpeed(speed)
+    }
+
+    fun setSemitones(semitones: Int) {
+        playerManager.setSemitones(semitones)
     }
 
     fun incrementPitch() {
-        setSemitones(_uiState.value.semitones + 1)
+        playerManager.setSemitones(playerManager.playerState.value.semitones + 1)
     }
 
     fun decrementPitch() {
-        setSemitones(_uiState.value.semitones - 1)
+        playerManager.setSemitones(playerManager.playerState.value.semitones - 1)
     }
 
-    // Ecualizador de 3 bandas en tiempo real
+    fun setVolume(vol: Float) {
+        playerManager.setVolume(vol)
+    }
+
     fun setBassGain(db: Float) {
-        val clamped = db.coerceIn(-12f, 12f)
-        val newCfg = _uiState.value.equalizerConfig.copy(bassGainDb = clamped)
-        _uiState.update { it.copy(equalizerConfig = newCfg) }
-        liveAudioEffects.applyConfig(newCfg)
+        val cfg = playerManager.playerState.value.equalizerConfig.copy(bassGainDb = db)
+        playerManager.updateEqualizer(cfg)
     }
 
     fun setMidGain(db: Float) {
-        val clamped = db.coerceIn(-12f, 12f)
-        val newCfg = _uiState.value.equalizerConfig.copy(midGainDb = clamped)
-        _uiState.update { it.copy(equalizerConfig = newCfg) }
-        liveAudioEffects.applyConfig(newCfg)
+        val cfg = playerManager.playerState.value.equalizerConfig.copy(midGainDb = db)
+        playerManager.updateEqualizer(cfg)
     }
 
     fun setTrebleGain(db: Float) {
-        val clamped = db.coerceIn(-12f, 12f)
-        val newCfg = _uiState.value.equalizerConfig.copy(trebleGainDb = clamped)
-        _uiState.update { it.copy(equalizerConfig = newCfg) }
-        liveAudioEffects.applyConfig(newCfg)
+        val cfg = playerManager.playerState.value.equalizerConfig.copy(trebleGainDb = db)
+        playerManager.updateEqualizer(cfg)
     }
 
     fun setBassBoost(percent: Int) {
-        val clamped = percent.coerceIn(0, 100)
-        val newCfg = _uiState.value.equalizerConfig.copy(bassBoostPercent = clamped)
-        _uiState.update { it.copy(equalizerConfig = newCfg) }
-        liveAudioEffects.applyConfig(newCfg)
+        val cfg = playerManager.playerState.value.equalizerConfig.copy(bassBoostPercent = percent)
+        playerManager.updateEqualizer(cfg)
     }
 
     fun resetPitchAndSpeed() {
-        _uiState.update { it.copy(speed = 1.0f, semitones = 0) }
-        applyPlaybackParameters()
+        playerManager.resetPitchAndSpeed()
     }
 
     fun resetEqualizer() {
-        val flat = EqualizerConfig()
-        _uiState.update { it.copy(equalizerConfig = flat) }
-        liveAudioEffects.applyConfig(flat)
+        playerManager.updateEqualizer(EqualizerConfig())
     }
 
     fun resetAllEffects() {
-        resetPitchAndSpeed()
-        resetEqualizer()
-    }
-
-    private fun applyPlaybackParameters() {
-        val currentSpeed = _uiState.value.speed
-        val pitch = _uiState.value.pitchFactor
-        exoPlayer?.playbackParameters = PlaybackParameters(currentSpeed, pitch)
+        playerManager.resetAllEffects()
     }
 
     fun onPickedAudioUri(uri: Uri) {
@@ -348,7 +309,7 @@ class SongEditorViewModel(application: Application) : AndroidViewModel(applicati
                         songs = listOf(song) + state.songs.filter { it.id != song.id }
                     )
                 }
-                selectSong(song, autoOpenEditor = true)
+                playSong(song, autoOpenPlayer = true)
             } else {
                 _uiState.update {
                     it.copy(
@@ -360,12 +321,13 @@ class SongEditorViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    // Exportación real sin sobrescribir original
     fun saveModifiedCopy() {
-        val currentSong = _uiState.value.selectedSong ?: return
-        val currentSpeed = _uiState.value.speed
-        val currentSemitones = _uiState.value.semitones
-        val currentPitchFactor = _uiState.value.pitchFactor
-        val eqConfig = _uiState.value.equalizerConfig
+        val currentSong = playerManager.playerState.value.currentSong ?: return
+        val currentSpeed = playerManager.playerState.value.speed
+        val currentSemitones = playerManager.playerState.value.semitones
+        val currentPitchFactor = playerManager.playerState.value.pitchFactor
+        val eqConfig = playerManager.playerState.value.equalizerConfig
 
         viewModelScope.launch {
             _uiState.update {
@@ -444,37 +406,5 @@ class SongEditorViewModel(application: Application) : AndroidViewModel(applicati
 
     fun dismissInfoMessage() {
         _uiState.update { it.copy(infoMessage = null) }
-    }
-
-    private fun startProgressTracking() {
-        progressTrackingJob?.cancel()
-        progressTrackingJob = viewModelScope.launch {
-            while (isActive) {
-                exoPlayer?.let { player ->
-                    if (player.isPlaying) {
-                        _uiState.update {
-                            it.copy(
-                                currentPositionMs = player.currentPosition.coerceAtLeast(0L),
-                                totalDurationMs = player.duration.coerceAtLeast(0L)
-                            )
-                        }
-                    }
-                }
-                delay(100)
-            }
-        }
-    }
-
-    private fun stopProgressTracking() {
-        progressTrackingJob?.cancel()
-        progressTrackingJob = null
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        stopProgressTracking()
-        liveAudioEffects.release()
-        exoPlayer?.release()
-        exoPlayer = null
     }
 }

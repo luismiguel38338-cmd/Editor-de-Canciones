@@ -16,9 +16,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,7 +49,8 @@ fun MiniPlayerBar(
     currentPositionMs: Long,
     totalDurationMs: Long,
     onTogglePlayPause: () -> Unit,
-    onOpenEditor: () -> Unit,
+    onSkipToNext: () -> Unit,
+    onOpenPlayer: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val progress = if (totalDurationMs > 0) {
@@ -61,10 +62,10 @@ fun MiniPlayerBar(
             .fillMaxWidth()
             .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
             .background(StudioSurfaceElevated)
-            .clickable(onClick = onOpenEditor)
+            .clickable(onClick = onOpenPlayer)
             .testTag("mini_player_bar")
     ) {
-        // Slim progress line at the very top of mini-player
+        // Línea fina de progreso
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -82,10 +83,10 @@ fun MiniPlayerBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(horizontal = 14.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Album art thumbnail
+            // Mini carátula
             Box(
                 modifier = Modifier
                     .size(44.dp)
@@ -105,14 +106,14 @@ fun MiniPlayerBar(
                         imageVector = Icons.Default.MusicNote,
                         contentDescription = null,
                         tint = StudioCobalt,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Song Title & Artist
+            // Título y artista
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = song.title,
@@ -134,7 +135,7 @@ fun MiniPlayerBar(
                 )
             }
 
-            // Play / Pause Toggle Button
+            // Reproducir / Pausar
             IconButton(
                 onClick = onTogglePlayPause,
                 modifier = Modifier
@@ -147,24 +148,24 @@ fun MiniPlayerBar(
                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                     contentDescription = if (isPlaying) "Pausar" else "Reproducir",
                     tint = TextPrimary,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.width(4.dp))
 
-            // Open Editor Button
+            // Siguiente canción
             IconButton(
-                onClick = onOpenEditor,
+                onClick = onSkipToNext,
                 modifier = Modifier
-                    .size(36.dp)
-                    .testTag("mini_player_expand")
+                    .size(38.dp)
+                    .testTag("mini_player_skip_next")
             ) {
                 Icon(
-                    imageVector = Icons.Default.OpenInFull,
-                    contentDescription = "Abrir editor",
+                    imageVector = Icons.Default.SkipNext,
+                    contentDescription = "Siguiente canción",
                     tint = TextSecondary,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(22.dp)
                 )
             }
         }

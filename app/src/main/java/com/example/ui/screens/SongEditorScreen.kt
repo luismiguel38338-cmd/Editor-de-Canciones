@@ -77,6 +77,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.data.model.Song
 import com.example.ui.components.ParametricEqVisualizer
+import com.example.audio.PlayerRepeatMode
 import com.example.ui.theme.StudioAmber
 import com.example.ui.theme.StudioBg
 import com.example.ui.theme.StudioCobalt
@@ -119,13 +120,14 @@ fun SongEditorScreen(
     onDismissError: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val playerState = uiState.playerState
     val scrollState = rememberScrollState()
 
     var isUserScrubbing by remember { mutableStateOf(false) }
     var scrubPositionMs by remember { mutableFloatStateOf(0f) }
 
-    val currentPosition = if (isUserScrubbing) scrubPositionMs.toLong() else uiState.currentPositionMs
-    val totalDuration = uiState.totalDurationMs.coerceAtLeast(1L)
+    val currentPosition = if (isUserScrubbing) scrubPositionMs.toLong() else playerState.currentPositionMs
+    val totalDuration = playerState.totalDurationMs.coerceAtLeast(1L)
     val playbackProgress = (currentPosition.toFloat() / totalDuration.toFloat()).coerceIn(0f, 1f)
 
     var selectedEffectTab by remember { mutableIntStateOf(0) } // 0 = Tono y Velocidad, 1 = Ecualizador
@@ -305,13 +307,13 @@ fun SongEditorScreen(
                             modifier = Modifier
                                 .size(42.dp)
                                 .clip(CircleShape)
-                                .background(if (uiState.isLooping) StudioCobalt.copy(alpha = 0.2f) else StudioSurfaceHighlight)
+                                .background(if (playerState.repeatMode != PlayerRepeatMode.OFF) StudioCobalt.copy(alpha = 0.2f) else StudioSurfaceHighlight)
                                 .testTag("loop_button")
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Repeat,
                                 contentDescription = "Bucle",
-                                tint = if (uiState.isLooping) StudioCobalt else TextSecondary,
+                                tint = if (playerState.repeatMode != PlayerRepeatMode.OFF) StudioCobalt else TextSecondary,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -346,8 +348,8 @@ fun SongEditorScreen(
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
                         ) {
                             Icon(
-                                imageVector = if (uiState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                contentDescription = if (uiState.isPlaying) "Pausar" else "Reproducir",
+                                imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = if (playerState.isPlaying) "Pausar" else "Reproducir",
                                 modifier = Modifier.size(30.dp)
                             )
                         }
@@ -371,7 +373,7 @@ fun SongEditorScreen(
                         // Indicador de volumen rápido
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = if (uiState.volume > 0.5f) Icons.Default.VolumeUp else Icons.Default.VolumeDown,
+                                imageVector = if (playerState.volume > 0.5f) Icons.Default.VolumeUp else Icons.Default.VolumeDown,
                                 contentDescription = null,
                                 tint = TextSecondary,
                                 modifier = Modifier.size(16.dp)
@@ -393,7 +395,7 @@ fun SongEditorScreen(
                             modifier = Modifier.width(54.dp)
                         )
                         Slider(
-                            value = uiState.volume,
+                            value = playerState.volume,
                             onValueChange = onVolumeChanged,
                             valueRange = 0f..1f,
                             colors = SliderDefaults.colors(
@@ -404,7 +406,7 @@ fun SongEditorScreen(
                             modifier = Modifier.weight(1f)
                         )
                         Text(
-                            text = "${(uiState.volume * 100).toInt()}%",
+                            text = "${(playerState.volume * 100).toInt()}%",
                             color = TextSecondary,
                             fontSize = 11.sp,
                             modifier = Modifier.width(36.dp),
@@ -513,7 +515,7 @@ fun SongEditorScreen(
                                 border = BorderStroke(0.5.dp, StudioCobalt.copy(alpha = 0.3f))
                             ) {
                                 Text(
-                                    text = String.format(Locale.US, "%.2fx", uiState.speed),
+                                    text = String.format(Locale.US, "%.2fx", playerState.speed),
                                     color = StudioCobalt,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp,
@@ -523,7 +525,7 @@ fun SongEditorScreen(
                         }
 
                         Slider(
-                            value = uiState.speed,
+                            value = playerState.speed,
                             onValueChange = onSpeedChanged,
                             valueRange = 0.5f..2.0f,
                             steps = 29,
@@ -544,7 +546,7 @@ fun SongEditorScreen(
                         ) {
                             listOf(0.75f to "0.75x", 1.0f to "1.0x", 1.25f to "1.25x", 1.5f to "1.5x", 2.0f to "2.0x").forEach { (speedVal, label) ->
                                 FilterChip(
-                                    selected = kotlin.math.abs(uiState.speed - speedVal) < 0.03f,
+                                    selected = kotlin.math.abs(playerState.speed - speedVal) < 0.03f,
                                     onClick = { onSpeedChanged(speedVal) },
                                     label = { Text(label, fontSize = 11.sp) },
                                     colors = FilterChipDefaults.filterChipColors(
@@ -590,9 +592,9 @@ fun SongEditorScreen(
                                 shape = RoundedCornerShape(6.dp),
                                 border = BorderStroke(0.5.dp, StudioAmber.copy(alpha = 0.3f))
                             ) {
-                                val sign = if (uiState.semitones > 0) "+" else ""
+                                val sign = if (playerState.semitones > 0) "+" else ""
                                 Text(
-                                    text = "$sign${uiState.semitones} st (${String.format(Locale.US, "%.2fx", uiState.pitchFactor)})",
+                                    text = "$sign${playerState.semitones} st (${String.format(Locale.US, "%.2fx", playerState.pitchFactor)})",
                                     color = StudioAmber,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp,
@@ -609,7 +611,7 @@ fun SongEditorScreen(
                         ) {
                             IconButton(
                                 onClick = onDecrementPitch,
-                                enabled = uiState.semitones > -12,
+                                enabled = playerState.semitones > -12,
                                 modifier = Modifier
                                     .size(34.dp)
                                     .clip(CircleShape)
@@ -620,7 +622,7 @@ fun SongEditorScreen(
                             }
 
                             Slider(
-                                value = uiState.semitones.toFloat(),
+                                value = playerState.semitones.toFloat(),
                                 onValueChange = { onSemitonesChanged(it.toInt()) },
                                 valueRange = -12f..12f,
                                 steps = 23,
@@ -637,7 +639,7 @@ fun SongEditorScreen(
 
                             IconButton(
                                 onClick = onIncrementPitch,
-                                enabled = uiState.semitones < 12,
+                                enabled = playerState.semitones < 12,
                                 modifier = Modifier
                                     .size(34.dp)
                                     .clip(CircleShape)
@@ -655,7 +657,7 @@ fun SongEditorScreen(
                         ) {
                             listOf(-5 to "-5st", -2 to "-2st", 0 to "0 (Orig)", 2 to "+2st", 5 to "+5st", 7 to "+7st").forEach { (semi, label) ->
                                 FilterChip(
-                                    selected = uiState.semitones == semi,
+                                    selected = playerState.semitones == semi,
                                     onClick = { onSemitonesChanged(semi) },
                                     label = { Text(label, fontSize = 11.sp) },
                                     colors = FilterChipDefaults.filterChipColors(

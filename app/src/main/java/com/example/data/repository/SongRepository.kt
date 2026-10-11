@@ -9,17 +9,15 @@ import android.provider.OpenableColumns
 import com.example.data.model.Song
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import kotlin.math.PI
-import kotlin.math.sin
 
 class SongRepository(private val context: Context) {
 
+    private val prefs = context.getSharedPreferences("song_editor_prefs", Context.MODE_PRIVATE)
+
     suspend fun getDeviceSongs(): List<Song> = withContext(Dispatchers.IO) {
         val songsList = mutableListOf<Song>()
+        val favoriteIds = getFavoriteSongIds()
+
         val projection = arrayOf(
             MediaStore.Audio.Media._ID,
             MediaStore.Audio.Media.TITLE,
@@ -31,9 +29,10 @@ class SongRepository(private val context: Context) {
             MediaStore.Audio.Media.DISPLAY_NAME
         )
 
+        // Filtrar audios de al menos 3 segundos para ignorar tonos de notificación diminutos
         val selection = "${MediaStore.Audio.Media.DURATION} >= ?"
-        val selectionArgs = arrayOf("2000") // At least 2 seconds to ignore notification chirps
-        val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
+        val selectionArgs = arrayOf("3000")
+        val sortOrder = "${MediaStore.Audio.Media.TITLE} COLLATE NOCASE ASC"
 
         try {
             val cursor = context.contentResolver.query(
@@ -86,7 +85,8 @@ class SongRepository(private val context: Context) {
                             uri = contentUri,
                             albumArtUri = albumArtUri,
                             size = size,
-                            isSavedEdit = isEdit
+                            isSavedEdit = isEdit,
+                            isFavorite = favoriteIds.contains(id.toString())
                         )
                     )
                 }
@@ -100,7 +100,7 @@ class SongRepository(private val context: Context) {
 
     suspend fun getSongFromPickedUri(uri: Uri): Song? = withContext(Dispatchers.IO) {
         try {
-            var fileName = "Canción seleccionada"
+            var fileName = "Archivo de audio"
             var fileSize = 0L
 
             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
@@ -145,7 +145,8 @@ class SongRepository(private val context: Context) {
                 uri = uri,
                 albumArtUri = null,
                 size = fileSize,
-                isSavedEdit = false
+                isSavedEdit = false,
+                isFavorite = false
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -153,121 +154,21 @@ class SongRepository(private val context: Context) {
         }
     }
 
-    suspend fun generateSampleTracks(): List<Song> = withContext(Dispatchers.IO) {
-        val samplesDir = File(context.cacheDir, "sample_audio").apply { if (!exists()) mkdirs() }
-
-        val track1 = createSynthTrack(
-            file = File(samplesDir, "cyber_pulse_128bpm.wav"),
-            title = "Cyber Pulse",
-            artist = "Studio Synth",
-            bpm = 128,
-            durationSeconds = 12,
-            baseFreq = 110.0 // A2
-        )
-
-        val track2 = createSynthTrack(
-            file = File(samplesDir, "neon_sunset_lofi.wav"),
-            title = "Neon Sunset",
-            artist = "Lo-Fi Beats",
-            bpm = 88,
-            durationSeconds = 14,
-            baseFreq = 130.81 // C3
-        )
-
-        val track3 = createSynthTrack(
-            file = File(samplesDir, "acoustic_horizon.wav"),
-            title = "Acoustic Horizon",
-            artist = "Acoustic Melody",
-            bpm = 105,
-            durationSeconds = 12,
-            baseFreq = 146.83 // D3
-        )
-
-        listOf(track1, track2, track3)
+    fun getFavoriteSongIds(): Set<String> {
+        return prefs.getStringSet("favorite_song_ids", emptySet()) ?: emptySet()
     }
 
-    private fun createSynthTrack(
-        file: File,
-        title: String,
-        artist: String,
-        bpm: Int,
-        durationSeconds: Int,
-        baseFreq: Double
-    ): Song {
-        if (!file.exists() || file.length() < 1000) {
-            val sampleRate = 44100
-            val totalSamples = sampleRate * durationSeconds
-            val bytes = ByteArray(totalSamples * 2) // 16-bit mono
-            val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
-
-            val beatInterval = (60.0 / bpm) * sampleRate
-            // Minor pentatonic intervals: 1, 1.2, 1.334, 1.5, 1.778
-            val scaleRatios = doubleArrayOf(1.0, 1.189, 1.335, 1.498, 1.782, 2.0)
-
-            for (i in 0 until totalSamples) {
-                val beatIndex = ((i / beatInterval).toInt()) % scaleRatios.size
-                val currentFreq = baseFreq * scaleRatios[beatIndex]
-
-                val t = i.toDouble() / sampleRate
-                val beatPos = (i % beatInterval.toInt()).toDouble() / beatInterval
-                // Envelope decay for plucked synth sound
-                val env = (1.0 - beatPos * 0.85).coerceIn(0.0, 1.0)
-
-                // Add fundamental + overtone + soft chorus
-                val wave1 = sin(2.0 * PI * currentFreq * t)
-                val wave2 = sin(2.0 * PI * (currentFreq * 2.01) * t) * 0.4
-                val wave3 = sin(2.0 * PI * (currentFreq * 0.5) * t) * 0.3
-
-                // Subtle drum click on downbeats
-                val click = if (beatPos < 0.05) sin(2.0 * PI * 60.0 * (1.0 - beatPos * 20.0)) * 0.5 else 0.0
-
-                val sampleVal = ((wave1 + wave2 + wave3) * env * 0.7 + click) * 16000.0
-                val clamped = sampleVal.toInt().coerceIn(-32767, 32767).toShort()
-                buffer.putShort(clamped)
-            }
-
-            FileOutputStream(file).use { fos ->
-                writeWav(fos, sampleRate, 1, bytes)
-            }
+    fun toggleFavorite(songId: Long): Boolean {
+        val current = getFavoriteSongIds().toMutableSet()
+        val idStr = songId.toString()
+        val isNowFavorite = if (current.contains(idStr)) {
+            current.remove(idStr)
+            false
+        } else {
+            current.add(idStr)
+            true
         }
-
-        return Song(
-            id = file.name.hashCode().toLong(),
-            title = title,
-            artist = artist,
-            album = "Pistas Demo",
-            durationMs = (durationSeconds * 1000).toLong(),
-            uri = Uri.fromFile(file),
-            albumArtUri = null,
-            size = file.length(),
-            isSavedEdit = false,
-            isSample = true
-        )
-    }
-
-    private fun writeWav(fos: FileOutputStream, sampleRate: Int, channels: Int, pcmData: ByteArray) {
-        val totalDataLen = pcmData.size + 36
-        val byteRate = (sampleRate * channels * 16) / 8
-        val blockAlign = (channels * 16) / 8
-
-        val header = ByteArray(44)
-        val bb = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN)
-        bb.put("RIFF".toByteArray())
-        bb.putInt(totalDataLen)
-        bb.put("WAVE".toByteArray())
-        bb.put("fmt ".toByteArray())
-        bb.putInt(16)
-        bb.putShort(1.toShort())
-        bb.putShort(channels.toShort())
-        bb.putInt(sampleRate)
-        bb.putInt(byteRate)
-        bb.putShort(blockAlign.toShort())
-        bb.putShort(16.toShort())
-        bb.put("data".toByteArray())
-        bb.putInt(pcmData.size)
-
-        fos.write(header)
-        fos.write(pcmData)
-        fos.flush()
+        prefs.edit().putStringSet("favorite_song_ids", current).apply()
+        return isNowFavorite
     }
 }

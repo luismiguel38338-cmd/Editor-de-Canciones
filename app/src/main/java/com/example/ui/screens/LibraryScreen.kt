@@ -31,14 +31,11 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Sort
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -84,7 +81,6 @@ fun LibraryScreen(
     onSearchQueryChanged: (String) -> Unit,
     onSortOrderChanged: (LibrarySortOrder) -> Unit,
     onRefresh: () -> Unit,
-    onLoadSampleTracks: () -> Unit,
     onPickedAudioUri: (Uri) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -136,7 +132,7 @@ fun LibraryScreen(
                     )
                 )
                 Text(
-                    text = "${uiState.filteredSongs.size} pistas de audio disponibles",
+                    text = "${uiState.filteredSongs.size} canciones en el dispositivo",
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = TextSecondary
                     )
@@ -183,9 +179,23 @@ fun LibraryScreen(
                             }
                         )
                         DropdownMenuItem(
+                            text = { Text("Por álbum", color = TextPrimary) },
+                            onClick = {
+                                onSortOrderChanged(LibrarySortOrder.ALBUM)
+                                showSortMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
                             text = { Text("Por duración (Mayor)", color = TextPrimary) },
                             onClick = {
                                 onSortOrderChanged(LibrarySortOrder.DURATION)
+                                showSortMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Favoritos primero", color = TextPrimary) },
+                            onClick = {
+                                onSortOrderChanged(LibrarySortOrder.FAVORITES)
                                 showSortMenu = false
                             }
                         )
@@ -234,13 +244,13 @@ fun LibraryScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Acceso a pistas locales",
+                            text = "Acceso a música del dispositivo",
                             fontWeight = FontWeight.SemiBold,
                             color = TextPrimary,
                             fontSize = 14.sp
                         )
                         Text(
-                            text = "Concede acceso para examinar todas las canciones de tu dispositivo.",
+                            text = "Concede acceso para listar las canciones reales almacenadas en tu memoria.",
                             color = TextSecondary,
                             fontSize = 12.sp
                         )
@@ -266,7 +276,7 @@ fun LibraryScreen(
         OutlinedTextField(
             value = uiState.searchQuery,
             onValueChange = onSearchQueryChanged,
-            placeholder = { Text("Buscar por título o artista…", color = TextMuted, fontSize = 14.sp) },
+            placeholder = { Text("Buscar por título, artista o álbum…", color = TextMuted, fontSize = 14.sp) },
             leadingIcon = {
                 Icon(Icons.Default.Search, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(18.dp))
             },
@@ -293,17 +303,16 @@ fun LibraryScreen(
             shape = RoundedCornerShape(10.dp)
         )
 
-        // Botones de acción rápida: Abrir archivo local y Pistas demo
+        // Botón para examinar y abrir archivos mediante el selector de documentos de Android
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 16.dp, vertical = 6.dp)
         ) {
             OutlinedButton(
                 onClick = { filePickerLauncher.launch("audio/*") },
                 modifier = Modifier
-                    .weight(1f)
+                    .fillMaxWidth()
                     .height(40.dp)
                     .testTag("pick_file_button"),
                 shape = RoundedCornerShape(8.dp),
@@ -315,31 +324,12 @@ fun LibraryScreen(
                 contentPadding = PaddingValues(horizontal = 12.dp)
             ) {
                 Icon(Icons.Default.FileOpen, contentDescription = null, modifier = Modifier.size(16.dp), tint = StudioCobalt)
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Abrir archivo", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            }
-
-            OutlinedButton(
-                onClick = onLoadSampleTracks,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(40.dp)
-                    .testTag("load_samples_button"),
-                shape = RoundedCornerShape(8.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, StudioSurfaceBorder),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = TextPrimary,
-                    containerColor = StudioSurface
-                ),
-                contentPadding = PaddingValues(horizontal = 12.dp)
-            ) {
-                Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(16.dp), tint = TextSecondary)
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Pistas de prueba", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Abrir archivo de audio desde almacenamiento", fontSize = 13.sp, fontWeight = FontWeight.Medium)
             }
         }
 
-        // Lista de canciones
+        // Lista de canciones reales
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -354,7 +344,7 @@ fun LibraryScreen(
                     CircularProgressIndicator(color = StudioCobalt, modifier = Modifier.size(36.dp), strokeWidth = 3.dp)
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "Cargando pistas de audio…",
+                        text = "Leyendo canciones del dispositivo…",
                         color = TextSecondary,
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -386,7 +376,7 @@ fun LibraryScreen(
 
                     Text(
                         text = if (uiState.searchQuery.isNotEmpty()) {
-                            "Sin coincidencias para '${uiState.searchQuery}'"
+                            "Sin resultados para '${uiState.searchQuery}'"
                         } else {
                             "No se encontraron canciones en el dispositivo"
                         },
@@ -400,7 +390,7 @@ fun LibraryScreen(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Puedes abrir un archivo desde el almacenamiento o cargar pistas de prueba sintetizadas.",
+                        text = "Asegúrate de tener música en la carpeta de Música o pulsa el botón para seleccionar cualquier archivo de audio de tu almacenamiento.",
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = TextSecondary
                         ),
@@ -410,17 +400,17 @@ fun LibraryScreen(
                     Spacer(modifier = Modifier.height(18.dp))
 
                     Button(
-                        onClick = onLoadSampleTracks,
+                        onClick = { filePickerLauncher.launch("audio/*") },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = StudioCobalt,
                             contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.testTag("empty_state_load_samples")
+                        modifier = Modifier.testTag("empty_state_browse_audio")
                     ) {
-                        Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.FileOpen, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Cargar pistas de prueba", fontSize = 13.sp)
+                        Text("Buscar y abrir archivo de audio", fontSize = 13.sp)
                     }
                 }
             } else {
@@ -437,7 +427,7 @@ fun LibraryScreen(
                     ) { song ->
                         SongItem(
                             song = song,
-                            isSelected = uiState.selectedSong?.id == song.id,
+                            isSelected = uiState.playerState.currentSong?.id == song.id,
                             onClick = { onSongSelected(song) }
                         )
                     }

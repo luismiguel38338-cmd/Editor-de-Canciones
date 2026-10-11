@@ -5,13 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -32,14 +30,12 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.FolderShared
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -52,18 +48,13 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -74,9 +65,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.components.MiniPlayerBar
 import com.example.ui.screens.ExportsScreen
 import com.example.ui.screens.LibraryScreen
+import com.example.ui.screens.PlayerScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.SongEditorScreen
-import com.example.ui.screens.SplashScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.StudioBg
 import com.example.ui.theme.StudioCobalt
@@ -99,23 +90,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = StudioBg
                 ) {
-                    var showSplash by rememberSaveable { mutableStateOf(true) }
-
-                    AnimatedContent(
-                        targetState = showSplash,
-                        transitionSpec = {
-                            fadeIn() togetherWith fadeOut()
-                        },
-                        label = "splash_transition"
-                    ) { isSplashActive ->
-                        if (isSplashActive) {
-                            SplashScreen(
-                                onAnimationFinished = { showSplash = false }
-                            )
-                        } else {
-                            SongEditorMainApp()
-                        }
-                    }
+                    SongEditorMainApp()
                 }
             }
         }
@@ -153,9 +128,11 @@ fun SongEditorMainApp(
                     .fillMaxWidth()
                     .windowInsetsPadding(WindowInsets.navigationBars)
             ) {
-                // Mini-Player persistente si hay canción cargada y no estamos en la pestaña Editor
+                // Mini-Player persistente si hay canción cargada y no estamos en la pestaña Player ni Editor
                 AnimatedVisibility(
-                    visible = uiState.selectedSong != null && uiState.currentTab != NavigationTab.EDITOR,
+                    visible = uiState.selectedSong != null &&
+                            uiState.currentTab != NavigationTab.PLAYER &&
+                            uiState.currentTab != NavigationTab.EDITOR,
                     enter = slideInVertically { it } + fadeIn(),
                     exit = slideOutVertically { it } + fadeOut()
                 ) {
@@ -166,12 +143,13 @@ fun SongEditorMainApp(
                             currentPositionMs = uiState.currentPositionMs,
                             totalDurationMs = uiState.totalDurationMs,
                             onTogglePlayPause = { viewModel.togglePlayPause() },
-                            onOpenEditor = { viewModel.navigateTo(NavigationTab.EDITOR) }
+                            onSkipToNext = { viewModel.skipToNext() },
+                            onOpenPlayer = { viewModel.navigateTo(NavigationTab.PLAYER) }
                         )
                     }
                 }
 
-                // Barra de navegación inferior fija
+                // Barra de navegación inferior con las 5 secciones requeridas
                 NavigationBar(
                     containerColor = StudioSurface,
                     tonalElevation = 0.dp,
@@ -192,7 +170,7 @@ fun SongEditorMainApp(
                                 contentDescription = "Biblioteca"
                             )
                         },
-                        label = { Text("Biblioteca", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                        label = { Text("Biblioteca", fontSize = 10.sp, fontWeight = FontWeight.Medium) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = StudioCobalt,
                             selectedTextColor = StudioCobalt,
@@ -204,6 +182,26 @@ fun SongEditorMainApp(
                     )
 
                     NavigationBarItem(
+                        selected = uiState.currentTab == NavigationTab.PLAYER,
+                        onClick = { viewModel.navigateTo(NavigationTab.PLAYER) },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.GraphicEq,
+                                contentDescription = "Reproductor"
+                            )
+                        },
+                        label = { Text("Reproductor", fontSize = 10.sp, fontWeight = FontWeight.Medium) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = StudioCobalt,
+                            selectedTextColor = StudioCobalt,
+                            unselectedIconColor = TextSecondary,
+                            unselectedTextColor = TextSecondary,
+                            indicatorColor = StudioSurfaceHighlight
+                        ),
+                        modifier = Modifier.testTag("nav_player")
+                    )
+
+                    NavigationBarItem(
                         selected = uiState.currentTab == NavigationTab.EDITOR,
                         onClick = { viewModel.navigateTo(NavigationTab.EDITOR) },
                         icon = {
@@ -212,7 +210,7 @@ fun SongEditorMainApp(
                                 contentDescription = "Editor"
                             )
                         },
-                        label = { Text("Editor", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                        label = { Text("Editor", fontSize = 10.sp, fontWeight = FontWeight.Medium) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = StudioCobalt,
                             selectedTextColor = StudioCobalt,
@@ -232,7 +230,7 @@ fun SongEditorMainApp(
                                 contentDescription = "Exportaciones"
                             )
                         },
-                        label = { Text("Exportaciones", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                        label = { Text("Exportaciones", fontSize = 10.sp, fontWeight = FontWeight.Medium) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = StudioCobalt,
                             selectedTextColor = StudioCobalt,
@@ -252,7 +250,7 @@ fun SongEditorMainApp(
                                 contentDescription = "Ajustes"
                             )
                         },
-                        label = { Text("Ajustes", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                        label = { Text("Ajustes", fontSize = 10.sp, fontWeight = FontWeight.Medium) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = StudioCobalt,
                             selectedTextColor = StudioCobalt,
@@ -275,13 +273,30 @@ fun SongEditorMainApp(
                 NavigationTab.LIBRARY -> {
                     LibraryScreen(
                         uiState = uiState,
-                        onSongSelected = { song -> viewModel.selectSong(song, autoOpenEditor = true) },
+                        onSongSelected = { song -> viewModel.playSong(song, autoOpenPlayer = true) },
                         onPermissionResult = { granted -> viewModel.onPermissionResult(granted) },
                         onSearchQueryChanged = { q -> viewModel.onSearchQueryChanged(q) },
                         onSortOrderChanged = { order -> viewModel.setSortOrder(order) },
                         onRefresh = { viewModel.loadSongs() },
-                        onLoadSampleTracks = { viewModel.loadSampleTracksOnly() },
                         onPickedAudioUri = { uri -> viewModel.onPickedAudioUri(uri) }
+                    )
+                }
+
+                NavigationTab.PLAYER -> {
+                    PlayerScreen(
+                        playerState = uiState.playerState,
+                        onTogglePlayPause = { viewModel.togglePlayPause() },
+                        onSkipToNext = { viewModel.skipToNext() },
+                        onSkipToPrevious = { viewModel.skipToPrevious() },
+                        onSeek = { pos -> viewModel.seekTo(pos) },
+                        onToggleRepeatMode = { viewModel.toggleRepeatMode() },
+                        onToggleShuffle = { viewModel.toggleShuffle() },
+                        onVolumeChanged = { vol -> viewModel.setVolume(vol) },
+                        onToggleFavorite = { song -> viewModel.toggleFavorite(song) },
+                        onSelectSongFromQueue = { song -> viewModel.playSong(song) },
+                        onRemoveFromQueue = { idx -> viewModel.removeFromQueue(idx) },
+                        onSetSleepTimer = { mins -> viewModel.setSleepTimer(mins) },
+                        onOpenEditor = { viewModel.navigateTo(NavigationTab.EDITOR) }
                     )
                 }
 
@@ -323,7 +338,7 @@ fun SongEditorMainApp(
                 NavigationTab.EXPORTS -> {
                     ExportsScreen(
                         exportedTracks = uiState.exportedTracks,
-                        onPlayTrack = { song -> viewModel.selectSong(song, autoOpenEditor = true) },
+                        onPlayTrack = { song -> viewModel.playSong(song, autoOpenPlayer = true) },
                         onDeleteTrack = { track -> viewModel.deleteExportedTrack(track) },
                         onRefresh = { viewModel.loadExports() }
                     )
@@ -354,21 +369,21 @@ private fun EmptyEditorState(
             modifier = Modifier
                 .size(72.dp)
                 .clip(CircleShape)
-                .background(StudioSurfaceHighlight),
+                .background(StudioCobalt.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Tune,
                 contentDescription = null,
                 tint = StudioCobalt,
-                modifier = Modifier.size(34.dp)
+                modifier = Modifier.size(36.dp)
             )
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
         Text(
-            text = "Ninguna pista cargada",
+            text = "Ninguna pista seleccionada",
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary
@@ -379,7 +394,7 @@ private fun EmptyEditorState(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Selecciona una canción en tu biblioteca para comenzar a editar tono, velocidad y ecualización en tiempo real.",
+            text = "Selecciona una canción en la biblioteca o reproductor para ajustar velocidad, tono, ecualización y exportar una copia procesada.",
             style = MaterialTheme.typography.bodyMedium.copy(
                 color = TextSecondary
             ),
@@ -390,16 +405,19 @@ private fun EmptyEditorState(
 
         Button(
             onClick = onBrowseLibrary,
-            shape = RoundedCornerShape(8.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = StudioCobalt,
-                contentColor = Color.White
+                containerColor = StudioCobalt
             ),
-            modifier = Modifier.testTag("browse_library_from_editor")
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier.testTag("browse_library_button")
         ) {
-            Icon(Icons.Default.LibraryMusic, contentDescription = null, modifier = Modifier.size(18.dp))
+            Icon(
+                imageVector = Icons.Default.MusicNote,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Examinar Biblioteca", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text("Explorar Biblioteca", fontWeight = FontWeight.SemiBold)
         }
     }
 }
