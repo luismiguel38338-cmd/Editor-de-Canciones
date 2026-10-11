@@ -18,8 +18,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.ui.theme.ElectricViolet
-import com.example.ui.theme.NeonCyan
+import com.example.ui.theme.StudioCobalt
+import com.example.ui.theme.StudioIndigo
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -79,8 +79,8 @@ fun WaveformVisualizer(
             val brush = if (isPlayed) {
                 Brush.verticalGradient(
                     colors = listOf(
-                        NeonCyan,
-                        ElectricViolet
+                        StudioCobalt,
+                        StudioIndigo
                     ),
                     startY = y,
                     endY = y + barHeight

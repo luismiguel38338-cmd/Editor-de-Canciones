@@ -5,35 +5,35 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val StudioDarkColorScheme = darkColorScheme(
-    primary = NeonCyan,
-    onPrimary = Color(0xFF00363D),
-    primaryContainer = Color(0xFF004F58),
-    onPrimaryContainer = Color(0xFF97F0FF),
+private val StudioColorScheme = darkColorScheme(
+    primary = StudioCobalt,
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = StudioCobaltMuted,
+    onPrimaryContainer = Color(0xFFDBEAFE),
 
-    secondary = ElectricViolet,
-    onSecondary = Color(0xFF381E72),
-    secondaryContainer = Color(0xFF4F378B),
-    onSecondaryContainer = Color(0xFFEADDFF),
+    secondary = StudioIndigo,
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFF312E81),
+    onSecondaryContainer = Color(0xFFE0E7FF),
 
-    tertiary = AmberPitch,
-    onTertiary = Color(0xFF452B00),
-    tertiaryContainer = Color(0xFF633F00),
-    onTertiaryContainer = Color(0xFFFFDDB3),
+    tertiary = StudioAmber,
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFF78350F),
+    onTertiaryContainer = Color(0xFFFEF3C7),
 
-    background = DarkBg,
+    background = StudioBg,
     onBackground = TextPrimary,
 
-    surface = DarkSurface,
+    surface = StudioSurface,
     onSurface = TextPrimary,
-    surfaceVariant = DarkSurfaceVariant,
+    surfaceVariant = StudioSurfaceElevated,
     onSurfaceVariant = TextSecondary,
 
-    outline = DarkSurfaceBorder,
-    outlineVariant = Color(0xFF333B50),
+    outline = StudioSurfaceBorder,
+    outlineVariant = StudioSurfaceHighlight,
 
-    error = CoralAccent,
-    onError = Color(0xFF601410)
+    error = StudioCrimson,
+    onError = Color.White
 )
 
 @Composable
@@ -41,7 +41,7 @@ fun MyApplicationTheme(
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = StudioDarkColorScheme,
+        colorScheme = StudioColorScheme,
         typography = Typography,
         content = content
     )

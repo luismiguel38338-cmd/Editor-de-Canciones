@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,8 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
@@ -38,11 +36,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.data.model.Song
-import com.example.ui.theme.DarkSurface
-import com.example.ui.theme.DarkSurfaceBorder
-import com.example.ui.theme.DarkSurfaceVariant
-import com.example.ui.theme.ElectricViolet
-import com.example.ui.theme.NeonCyan
+import com.example.ui.theme.StudioCobalt
+import com.example.ui.theme.StudioIndigo
+import com.example.ui.theme.StudioSurface
+import com.example.ui.theme.StudioSurfaceBorder
+import com.example.ui.theme.StudioSurfaceElevated
+import com.example.ui.theme.StudioSurfaceHighlight
+import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 
@@ -50,145 +50,128 @@ import com.example.ui.theme.TextSecondary
 fun SongItem(
     song: Song,
     onClick: () -> Unit,
+    isSelected: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (isSelected) StudioSurfaceElevated else StudioSurface)
+            .border(
+                width = 1.dp,
+                color = if (isSelected) StudioCobalt.copy(alpha = 0.5f) else StudioSurfaceBorder,
+                shape = RoundedCornerShape(12.dp)
+            )
             .clickable(onClick = onClick)
+            .padding(12.dp)
             .testTag("song_item_${song.id}"),
-        colors = CardDefaults.cardColors(
-            containerColor = DarkSurface
-        ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, DarkSurfaceBorder),
-        shape = RoundedCornerShape(16.dp)
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        // Carátula / Icono
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .size(48.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(StudioSurfaceHighlight),
+            contentAlignment = Alignment.Center
         ) {
-            // Album art with fallback
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(DarkSurfaceVariant),
-                contentAlignment = Alignment.Center
-            ) {
-                if (song.albumArtUri != null) {
-                    AsyncImage(
-                        model = song.albumArtUri,
-                        contentDescription = "Portada de ${song.title}",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.linearGradient(
-                                    colors = listOf(
-                                        Color(0xFF1E293B),
-                                        if (song.isSavedEdit) ElectricViolet.copy(alpha = 0.4f) else NeonCyan.copy(alpha = 0.3f)
-                                    )
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
+            if (song.albumArtUri != null) {
+                AsyncImage(
+                    model = song.albumArtUri,
+                    contentDescription = "Carátula de ${song.title}",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    imageVector = if (song.isSavedEdit) Icons.Default.GraphicEq else Icons.Default.MusicNote,
+                    contentDescription = null,
+                    tint = if (song.isSavedEdit) StudioIndigo else StudioCobalt,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // Información de la pista
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = song.title,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Medium,
+                        color = if (isSelected) StudioCobalt else TextPrimary
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+
+                if (song.isSavedEdit) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Surface(
+                        color = StudioIndigo.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(4.dp),
+                        border = androidx.compose.foundation.BorderStroke(0.5.dp, StudioIndigo.copy(alpha = 0.4f))
                     ) {
-                        Icon(
-                            imageVector = if (song.isSavedEdit) Icons.Default.GraphicEq else Icons.Default.MusicNote,
-                            contentDescription = null,
-                            tint = if (song.isSavedEdit) ElectricViolet else NeonCyan,
-                            modifier = Modifier.size(28.dp)
+                        Text(
+                            text = "EDITADA",
+                            color = StudioIndigo,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
+                    }
+                } else if (song.isSample) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Surface(
+                        color = StudioCobalt.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(4.dp),
+                        border = androidx.compose.foundation.BorderStroke(0.5.dp, StudioCobalt.copy(alpha = 0.4f))
+                    ) {
+                        Text(
+                            text = "DEMO",
+                            color = StudioCobalt,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Text(
+                text = "${song.artist} • ${song.formattedDuration}",
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = TextSecondary
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
 
-            // Song Info
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = song.title,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
+        Spacer(modifier = Modifier.width(8.dp))
 
-                    if (song.isSavedEdit) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Surface(
-                            color = ElectricViolet.copy(alpha = 0.25f),
-                            shape = RoundedCornerShape(6.dp),
-                            border = androidx.compose.foundation.BorderStroke(0.5.dp, ElectricViolet)
-                        ) {
-                            Text(
-                                text = "EDIT",
-                                color = ElectricViolet,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                            )
-                        }
-                    } else if (song.isSample) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Surface(
-                            color = NeonCyan.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(6.dp),
-                            border = androidx.compose.foundation.BorderStroke(0.5.dp, NeonCyan)
-                        ) {
-                            Text(
-                                text = "DEMO",
-                                color = NeonCyan,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-                }
-
-                Text(
-                    text = "${song.artist} • ${song.formattedDuration}",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = TextSecondary
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Edit Action icon button
-            IconButton(
-                onClick = onClick,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(DarkSurfaceVariant)
-                    .testTag("edit_button_${song.id}")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Editar y reproducir ${song.title}",
-                    tint = NeonCyan,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
+        // Botón discreto de acción rápida
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(StudioSurfaceHighlight.copy(alpha = 0.6f))
+                .testTag("edit_button_${song.id}")
+        ) {
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = "Reproducir ${song.title}",
+                tint = if (isSelected) StudioCobalt else TextSecondary,
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }

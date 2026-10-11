@@ -1,81 +1,70 @@
-# 🎵 Editor de Canciones (Android)
+# 🎛️ Editor de Canciones (Android)
 
-Aplicación nativa para Android desarrollada en **Kotlin** con **Jetpack Compose**, **Material 3** y arquitectura **MVVM**. Permite reproducir canciones de la biblioteca del dispositivo, modificar velocidad y tono (*pitch*) en tiempo real y exportar copias procesadas sin alterar los archivos originales.
+Aplicación nativa para Android desarrollada en **Kotlin** con **Jetpack Compose**, **Material 3** y arquitectura **MVVM**. Ofrece un entorno de producción musical sobrio y profesional para reproducir, editar velocidad y tono en tiempo real, aplicar ecualización paramétrica de 3 bandas con refuerzo de graves y exportar copias procesadas sin alterar los archivos de origen.
 
 ---
 
-## 🚀 Características Principales
+## 🏛️ Arquitectura y Secciones de la Aplicación
 
-- **Pantalla de Inicio con Animación Neón:**
-  - Animación de entrada fluida con ondas sonoras en expansión, tocadiscos de vinilo giratorio y barras ecualizadoras pulsantes.
-  - Transición suave hacia la biblioteca o acceso inmediato tocando "Entrar al Estudio".
+La aplicación se estructura en 4 áreas principales accesibles mediante una barra de navegación ergonómica y un **Mini-Reproductor Persistente**:
 
-- **Lectura y Exploración de Canciones (MediaStore):**
-  - Solicitud de permisos en tiempo de ejecución (`READ_MEDIA_AUDIO` en Android 13+ y `READ_EXTERNAL_STORAGE` en versiones anteriores).
-  - Consulta automática a `MediaStore` con título, artista, duración y carátula de álbum.
-  - Pestañas organizadas: *Canciones* y *Mis Ediciones*.
-  - Búsqueda en tiempo real por título o artista.
-  - Selector directo de archivos de audio locales (`audio/*`) y pistas de prueba sintetizadas integradas.
+1. **Biblioteca:**
+   - Exploración de la colección musical del dispositivo vía `MediaStore`.
+   - Búsqueda en tiempo real por título y artista.
+   - Ordenamiento avanzado por Título (A-Z), Artista o Duración.
+   - Importación directa de archivos de audio locales (`audio/*`) y pistas de prueba sintetizadas para demostración inmediata.
 
-- **Reproductor de Estudio (Media3 ExoPlayer):**
-  - Reproductor con tocadiscos animado, visualizador de forma de onda (*WaveformVisualizer*), scrubber de posición, salto de ±5 segundos y modo de repetición en bucle.
+2. **Estudio / Editor & Reproductor:**
+   - **Reproductor y Transporte:** Scrubber de línea de tiempo con lectura precisa en milisegundos, control de volumen con atenuación de pico, salto de ±5s y repetición en bucle.
+   - **Pestaña de Tono y Velocidad:** Fader continuo de velocidad (0.50x a 2.00x) y afinador de semitonos (-12st a +12st) con botones de paso fino y presets.
+   - **Pestaña de Ecualización Paramétrica & Graves:**
+     - Curva visual de respuesta en frecuencia paramétrica en tiempo real.
+     - 3 bandas de ecualización en escala de decibelios (-12 dB a +12 dB): Graves (< 250 Hz), Medios (~1 kHz) y Agudos (> 4 kHz).
+     - Refuerzo de subgraves (*Bass Boost* de 0% a 100%).
+     - Restablecimiento instantáneo a curva plana (0 dB).
+   - **Exportación Procesada:** Renderizado en segundo plano con indicador porcentual sin congelar la interfaz.
 
-- **Controles en Tiempo Real:**
-  - **Velocidad:** Selector deslizante continuo de 0.50x a 2.00x con accesos directos (0.75x, 1.0x, 1.25x, 1.5x, 2.0x).
-  - **Tono (Pitch):** Ajuste de -12 a +12 semitonos con botones paso a paso (+ / -) y presets (-5st, -2st, Original, +2st, +5st, +7st).
-  - Modificación instantánea de `PlaybackParameters(speed, pitch)` sin interrumpir la reproducción.
+3. **Exportaciones:**
+   - Historial y gestor de todas las pistas procesadas en `Música / EditorDeCanciones`.
+   - Fichas técnicas con tamaño exacto en MB, duración y fecha/hora de renderizado.
+   - Reproducción directa, opción de compartir archivo mediante la hoja de Android (`Intent.ACTION_SEND`) y eliminación con confirmación.
 
-- **Exportación No Destructiva:**
-  - Procesamiento con `MediaExtractor`, decodificador `MediaCodec` y `SonicAudioProcessor` de Media3.
-  - Genera una copia en formato WAV de 16 bits sin pérdidas guardada en la carpeta de Música (`Music/EditorDeCanciones`) vía `MediaStore`.
-  - **El archivo original nunca es sobrescrito ni modificado.**
+4. **Ajustes:**
+   - Información técnica del pipeline DSP (WAV 16-bit PCM, Sonic, Filtros IIR Biquad Direct Form II).
+   - Verificación de la integridad de los archivos originales (estrictamente de solo lectura).
+   - Herramienta de optimización y limpieza de caché temporal de renderizado.
+
+---
+
+## 🎧 Procesamiento Digital de Audio (DSP) Real
+
+A diferencia de interfaces meramente decorativas, el procesamiento es **real**:
+- **Reproducción en vivo:** `ExoPlayer` aplica `PlaybackParameters` para la velocidad y el tono con el motor Sonic, y se acopla a `android.media.audiofx.Equalizer` y `BassBoost` para la ecualización analógica en hardware.
+- **Exportación sin pérdidas:** Decodificación a PCM 16-bit mediante `MediaExtractor` y `MediaCodec`. Los buffers pasan por `SonicAudioProcessor` y por filtros digitales IIR Biquad (`LowShelf`, `Peaking`, `HighShelf`) antes de empaquetarse en un contenedor WAV RIFF estándar.
 
 ---
 
 ## 🛠️ Stack Tecnológico
 
 - **Lenguaje:** Kotlin 2.x
-- **UI:** Jetpack Compose con Material Design 3 (Dark Studio Theme)
-- **Audio Engine:** AndroidX Media3 (ExoPlayer & Sonic Audio Processor)
-- **Arquitectura:** MVVM (Model-View-ViewModel) + StateFlow
-- **Carga de Imágenes:** Coil Compose
-- **Testing:** JUnit 4 + Robolectric
+- **UI Toolkit:** Jetpack Compose (Material 3 Dark Graphite & Charcoal)
+- **Audio Core:** AndroidX Media3 (ExoPlayer 1.5.1 + Sonic DSP)
+- **Filtros DSP:** Biquad IIR Direct Form II implementado en PCM
+- **Arquitectura:** MVVM (Model-View-ViewModel) con `StateFlow` reactivo
+- **Pruebas:** JUnit 4 + Robolectric JVM
 
 ---
 
-## 📦 Compilación y Ejecución
+## 📦 Compilación y Pruebas
 
-### Prerrequisitos
-- Android Studio Ladybug / Meerkat o superior
-- JDK 17 o superior
-- Android SDK con `compileSdk 36` y `minSdk 24`
-
-### Compilar desde la terminal con Gradle
 ```bash
-# Dar permisos de ejecución al wrapper (Linux/macOS)
+# Otorgar permisos de ejecución
 chmod +x gradlew
 
-# Ejecutar pruebas unitarias
+# Ejecutar pruebas unitarias y de DSP
 ./gradlew testDebugUnitTest
 
-# Compilar APK en modo Debug
+# Compilar APK de depuración
 ./gradlew assembleDebug
-
-# El archivo generado estará en:
-# app/build/outputs/apk/debug/app-debug.apk
 ```
-
-### Compilar en Windows
-```cmd
-gradlew.bat assembleDebug
-```
-
----
-
-## 🤖 Integración Continua (GitHub Actions)
-
-El repositorio incluye un flujo de trabajo automatizado en `.github/workflows/android.yml`:
-1. Configura el entorno con Java 17.
-2. Ejecuta automáticamente los tests unitarios y de Robolectric.
-3. Compila el APK `app-debug.apk`.
-4. Sube el APK como artefacto descargable en las ejecuciones de GitHub Actions.
+El APK se genera en `app/build/outputs/apk/debug/app-debug.apk`.

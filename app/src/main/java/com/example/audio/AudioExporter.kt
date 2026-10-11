@@ -31,6 +31,7 @@ object AudioExporter {
         speed: Float,
         semitones: Int,
         pitchFactor: Float,
+        equalizerConfig: EqualizerConfig = EqualizerConfig(),
         onProgress: (Float) -> Unit
     ): Result<Song> = withContext(Dispatchers.IO) {
         var extractor: MediaExtractor? = null
@@ -86,6 +87,10 @@ object AudioExporter {
             var sonicInputFormat = AudioProcessor.AudioFormat(sampleRate, channelCount, C.ENCODING_PCM_16BIT)
             var sonicOutputFormat = sonic.configure(sonicInputFormat)
             sonic.flush()
+
+            val pcmEqualizer = PcmEqualizer(sonicOutputFormat.sampleRate).apply {
+                updateConfig(sonicOutputFormat.sampleRate, equalizerConfig)
+            }
 
             val fos = FileOutputStream(tempWavFile)
             // Write placeholder 44-byte WAV header
@@ -149,6 +154,7 @@ object AudioExporter {
                                 if (processedBuffer.hasRemaining()) {
                                     val bytes = ByteArray(processedBuffer.remaining())
                                     processedBuffer.get(bytes)
+                                    pcmEqualizer.processPcm16(bytes, sonicOutputFormat.channelCount)
                                     fos.write(bytes)
                                     totalPcmBytesWritten += bytes.size
                                 } else {
@@ -170,6 +176,7 @@ object AudioExporter {
                         sonicInputFormat = AudioProcessor.AudioFormat(sampleRate, channelCount, C.ENCODING_PCM_16BIT)
                         sonicOutputFormat = sonic.configure(sonicInputFormat)
                         sonic.flush()
+                        pcmEqualizer.updateConfig(sonicOutputFormat.sampleRate, equalizerConfig)
                     }
                 }
             }
@@ -181,6 +188,7 @@ object AudioExporter {
                 if (processedBuffer.hasRemaining()) {
                     val bytes = ByteArray(processedBuffer.remaining())
                     processedBuffer.get(bytes)
+                    pcmEqualizer.processPcm16(bytes, sonicOutputFormat.channelCount)
                     fos.write(bytes)
                     totalPcmBytesWritten += bytes.size
                 } else {
