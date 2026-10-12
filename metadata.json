@@ -1,6 +1,6 @@
 {
-  "name": "Editor de Canciones",
-  "description": "Editor de audio con reproductor Media3 ExoPlayer, ajuste de velocidad y tono en tiempo real y exportación de copias.",
+  "name": "MeloTune",
+  "description": "Reproductor musical profesional con editor de audio integrado, ecualizador, ajuste de velocidad y tono en tiempo real, y controles multimedia nativos.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

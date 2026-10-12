@@ -15,7 +15,10 @@ data class Song(
     val albumArtUri: Uri? = null,
     val size: Long = 0L,
     val isSavedEdit: Boolean = false,
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val originalTitle: String = title,
+    val originalArtist: String = artist,
+    val hasCustomMetadata: Boolean = false
 ) {
     val formattedDuration: String
         get() {

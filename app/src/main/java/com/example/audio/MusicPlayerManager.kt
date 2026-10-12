@@ -194,9 +194,21 @@ class MusicPlayerManager private constructor(private val context: Context) {
         loadAndPlayCurrentIndex()
     }
 
+    fun getOrCreateMediaSession(): MediaSession? {
+        if (mediaSession == null) {
+            setupMediaSession()
+        }
+        return mediaSession
+    }
+
     private fun loadAndPlayCurrentIndex() {
         val state = _playerState.value
         val song = state.currentSong ?: return
+
+        try {
+            val serviceIntent = Intent(context, com.example.service.PlaybackService::class.java)
+            context.startService(serviceIntent)
+        } catch (_: Exception) {}
 
         exoPlayer.stop()
         exoPlayer.clearMediaItems()
@@ -342,6 +354,22 @@ class MusicPlayerManager private constructor(private val context: Context) {
         _playerState.update { state ->
             val updated = state.queue + song
             state.copy(queue = updated)
+        }
+    }
+
+    fun playNext(song: Song) {
+        _playerState.update { state ->
+            val insertIndex = (state.currentIndex + 1).coerceAtMost(state.queue.size)
+            val updated = state.queue.toMutableList().apply { add(insertIndex, song) }
+            state.copy(queue = updated)
+        }
+    }
+
+    fun updateSongMetadata(updatedSong: Song) {
+        _playerState.update { state ->
+            val updatedQueue = state.queue.map { if (it.id == updatedSong.id) updatedSong else it }
+            val newCurrent = if (state.currentSong?.id == updatedSong.id) updatedSong else state.currentSong
+            state.copy(queue = updatedQueue, currentSong = newCurrent)
         }
     }
 

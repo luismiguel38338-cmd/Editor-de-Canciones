@@ -76,7 +76,7 @@ fun MiniPlayerBar(
                 modifier = Modifier
                     .fillMaxWidth(fraction = progress)
                     .height(2.5.dp)
-                    .background(StudioCobalt)
+                    .background(MaterialTheme.colorScheme.primary)
             )
         }
 
@@ -105,7 +105,7 @@ fun MiniPlayerBar(
                     Icon(
                         imageVector = Icons.Default.MusicNote,
                         contentDescription = null,
-                        tint = StudioCobalt,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
                 }

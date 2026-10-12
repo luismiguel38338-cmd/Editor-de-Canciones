@@ -7,12 +7,14 @@ import android.net.Uri
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import com.example.data.model.Song
+import com.example.ui.theme.AccentColorChoice
+import com.example.ui.theme.AppThemeMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class SongRepository(private val context: Context) {
 
-    private val prefs = context.getSharedPreferences("song_editor_prefs", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences("melotune_prefs", Context.MODE_PRIVATE)
 
     suspend fun getDeviceSongs(): List<Song> = withContext(Dispatchers.IO) {
         val songsList = mutableListOf<Song>()
@@ -57,9 +59,9 @@ class SongRepository(private val context: Context) {
                     val id = it.getLong(idCol)
                     val rawTitle = it.getString(titleCol) ?: ""
                     val displayName = it.getString(nameCol) ?: ""
-                    val title = if (rawTitle.isNotBlank()) rawTitle else displayName
-                    val artist = it.getString(artistCol) ?: "<unknown>"
-                    val cleanArtist = if (artist == "<unknown>" || artist.isBlank()) "Artista Desconocido" else artist
+                    val origTitle = if (rawTitle.isNotBlank()) rawTitle else displayName
+                    val rawArtist = it.getString(artistCol) ?: "<unknown>"
+                    val origArtist = if (rawArtist == "<unknown>" || rawArtist.isBlank()) "Artista Desconocido" else rawArtist
                     val album = it.getString(albumCol) ?: "Álbum Desconocido"
                     val duration = it.getLong(durationCol)
                     val albumId = it.getLong(albumIdCol)
@@ -71,22 +73,34 @@ class SongRepository(private val context: Context) {
                         albumId
                     )
 
-                    val isEdit = title.contains("(Edit", ignoreCase = true) ||
+                    val isEdit = origTitle.contains("(Edit", ignoreCase = true) ||
                             displayName.contains("_edit_", ignoreCase = true) ||
+                            album.contains("MeloTune", ignoreCase = true) ||
                             album.contains("Editor de Canciones", ignoreCase = true)
+
+                    // Metadatos personalizados guardados en preferencias
+                    val customTitle = prefs.getString("custom_title_$id", null)
+                    val customArtist = prefs.getString("custom_artist_$id", null)
+                    val hasCustom = customTitle != null || customArtist != null
+
+                    val displayTitle = customTitle ?: origTitle
+                    val displayArtist = customArtist ?: origArtist
 
                     songsList.add(
                         Song(
                             id = id,
-                            title = title,
-                            artist = cleanArtist,
+                            title = displayTitle,
+                            artist = displayArtist,
                             album = album,
                             durationMs = duration,
                             uri = contentUri,
                             albumArtUri = albumArtUri,
                             size = size,
                             isSavedEdit = isEdit,
-                            isFavorite = favoriteIds.contains(id.toString())
+                            isFavorite = favoriteIds.contains(id.toString()),
+                            originalTitle = origTitle,
+                            originalArtist = origArtist,
+                            hasCustomMetadata = hasCustom
                         )
                     )
                 }
@@ -112,8 +126,8 @@ class SongRepository(private val context: Context) {
                 }
             }
 
-            var title = fileName.substringBeforeLast(".")
-            var artist = "Artista Desconocido"
+            var origTitle = fileName.substringBeforeLast(".")
+            var origArtist = "Artista Desconocido"
             var album = "Audio importado"
             var durationMs = 0L
 
@@ -121,10 +135,10 @@ class SongRepository(private val context: Context) {
             try {
                 retriever.setDataSource(context, uri)
                 retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)?.let {
-                    if (it.isNotBlank()) title = it
+                    if (it.isNotBlank()) origTitle = it
                 }
                 retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)?.let {
-                    if (it.isNotBlank()) artist = it
+                    if (it.isNotBlank()) origArtist = it
                 }
                 retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)?.let {
                     if (it.isNotBlank()) album = it
@@ -136,17 +150,24 @@ class SongRepository(private val context: Context) {
                 try { retriever.release() } catch (_: Exception) {}
             }
 
+            val id = System.currentTimeMillis()
+            val customTitle = prefs.getString("custom_title_$id", null)
+            val customArtist = prefs.getString("custom_artist_$id", null)
+
             Song(
-                id = System.currentTimeMillis(),
-                title = title,
-                artist = artist,
+                id = id,
+                title = customTitle ?: origTitle,
+                artist = customArtist ?: origArtist,
                 album = album,
                 durationMs = durationMs,
                 uri = uri,
                 albumArtUri = null,
                 size = fileSize,
                 isSavedEdit = false,
-                isFavorite = false
+                isFavorite = false,
+                originalTitle = origTitle,
+                originalArtist = origArtist,
+                hasCustomMetadata = customTitle != null || customArtist != null
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -170,5 +191,55 @@ class SongRepository(private val context: Context) {
         }
         prefs.edit().putStringSet("favorite_song_ids", current).apply()
         return isNowFavorite
+    }
+
+    // Personalización de Metadatos (sin tocar el archivo original)
+    fun saveCustomMetadata(songId: Long, customTitle: String?, customArtist: String?) {
+        val editor = prefs.edit()
+        if (customTitle.isNullOrBlank()) {
+            editor.remove("custom_title_$songId")
+        } else {
+            editor.putString("custom_title_$songId", customTitle.trim())
+        }
+        if (customArtist.isNullOrBlank()) {
+            editor.remove("custom_artist_$songId")
+        } else {
+            editor.putString("custom_artist_$songId", customArtist.trim())
+        }
+        editor.apply()
+    }
+
+    fun resetCustomMetadata(songId: Long) {
+        prefs.edit()
+            .remove("custom_title_$songId")
+            .remove("custom_artist_$songId")
+            .apply()
+    }
+
+    // Preferencias de Apariencia
+    fun getThemeMode(): AppThemeMode {
+        val saved = prefs.getString("app_theme_mode", AppThemeMode.DARK.name)
+        return try {
+            AppThemeMode.valueOf(saved ?: AppThemeMode.DARK.name)
+        } catch (_: Exception) {
+            AppThemeMode.DARK
+        }
+    }
+
+    fun setThemeMode(mode: AppThemeMode) {
+        prefs.edit().putString("app_theme_mode", mode.name).apply()
+    }
+
+    fun getAccentColor(): AccentColorChoice {
+        val saved = prefs.getString("app_accent_color", AccentColorChoice.TURQUOISE.name)
+        return try {
+            AccentColorChoice.valueOf(saved ?: AccentColorChoice.TURQUOISE.name)
+        } catch (_: Exception) {
+            AccentColorChoice.TURQUOISE
+        }
+    }
+
+    fun setAccentColor(choice: AccentColorChoice) {
+        prefs.edit().putString("app_accent_color", choice.name).apply()
     }
 }

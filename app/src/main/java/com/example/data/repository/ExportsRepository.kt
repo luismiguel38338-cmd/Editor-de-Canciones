@@ -24,8 +24,8 @@ class ExportsRepository(private val context: Context) {
             MediaStore.Audio.Media.DATE_ADDED
         )
 
-        val selection = "${MediaStore.Audio.Media.DISPLAY_NAME} LIKE ? OR ${MediaStore.Audio.Media.ALBUM} = ?"
-        val selectionArgs = arrayOf("%_edit_%", "Ediciones Guardadas")
+        val selection = "${MediaStore.Audio.Media.DISPLAY_NAME} LIKE ? OR ${MediaStore.Audio.Media.ALBUM} = ? OR ${MediaStore.Audio.Media.ALBUM} = ?"
+        val selectionArgs = arrayOf("%_edit_%", "MeloTune", "Ediciones Guardadas")
         val sortOrder = "${MediaStore.Audio.Media.DATE_ADDED} DESC"
 
         try {
@@ -71,23 +71,25 @@ class ExportsRepository(private val context: Context) {
             e.printStackTrace()
         }
 
-        // También revisar la carpeta directa de la app si está en Android 9 o archivos en cache
+        // También revisar las carpetas directas si está en Android 9 o archivos locales
         try {
-            val musicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC), "EditorDeCanciones")
-            if (musicDir.exists() && musicDir.isDirectory) {
-                musicDir.listFiles { file -> file.extension.equals("wav", ignoreCase = true) }?.forEach { f ->
-                    if (tracks.none { it.fileName == f.name }) {
-                        tracks.add(
-                            ExportedTrack(
-                                id = f.name.hashCode().toLong(),
-                                title = f.nameWithoutExtension,
-                                fileName = f.name,
-                                uri = android.net.Uri.fromFile(f),
-                                sizeBytes = f.length(),
-                                durationMs = 0L,
-                                dateAddedMs = f.lastModified()
+            listOf("MeloTune", "EditorDeCanciones").forEach { folderName ->
+                val musicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC), folderName)
+                if (musicDir.exists() && musicDir.isDirectory) {
+                    musicDir.listFiles { file -> file.extension.equals("wav", ignoreCase = true) }?.forEach { f ->
+                        if (tracks.none { it.fileName == f.name }) {
+                            tracks.add(
+                                ExportedTrack(
+                                    id = f.name.hashCode().toLong(),
+                                    title = f.nameWithoutExtension,
+                                    fileName = f.name,
+                                    uri = android.net.Uri.fromFile(f),
+                                    sizeBytes = f.length(),
+                                    durationMs = 0L,
+                                    dateAddedMs = f.lastModified()
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }

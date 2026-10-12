@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Editor de Canciones"
+rootProject.name = "MeloTune"
 
 include(":app")

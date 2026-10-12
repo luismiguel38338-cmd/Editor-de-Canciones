@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Editor de Canciones</string>
+    <string name="app_name">MeloTune</string>
     <string name="permission_audio_title">Permiso de Acceso a Audio</string>
     <string name="permission_audio_desc">Para mostrar y editar tus canciones locales, necesitamos permiso para acceder a los archivos de audio de tu dispositivo.</string>
     <string name="grant_permission">Conceder Permiso</string>

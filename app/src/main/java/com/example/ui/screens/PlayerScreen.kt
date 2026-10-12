@@ -171,14 +171,14 @@ fun PlayerScreen(
                 modifier = Modifier
                     .size(38.dp)
                     .clip(CircleShape)
-                    .background(if (playerState.sleepTimerRemainingSeconds != null) StudioCobalt.copy(alpha = 0.2f) else StudioSurface)
+                    .background(if (playerState.sleepTimerRemainingSeconds != null) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else StudioSurface)
                     .border(1.dp, StudioSurfaceBorder, CircleShape)
                     .testTag("sleep_timer_button")
             ) {
                 Icon(
                     imageVector = Icons.Default.Bedtime,
                     contentDescription = "Temporizador de apagado",
-                    tint = if (playerState.sleepTimerRemainingSeconds != null) StudioCobalt else TextSecondary,
+                    tint = if (playerState.sleepTimerRemainingSeconds != null) MaterialTheme.colorScheme.primary else TextSecondary,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -188,7 +188,7 @@ fun PlayerScreen(
                     text = "REPRODUCIENDO",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = StudioCobalt,
+                    color = MaterialTheme.colorScheme.primary,
                     letterSpacing = 1.sp
                 )
                 if (playerState.sleepTimerRemainingSeconds != null) {
@@ -327,8 +327,8 @@ fun PlayerScreen(
                 },
                 valueRange = 0f..totalDuration.toFloat(),
                 colors = SliderDefaults.colors(
-                    thumbColor = StudioCobalt,
-                    activeTrackColor = StudioCobalt,
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = MaterialTheme.colorScheme.primary,
                     inactiveTrackColor = StudioSurfaceBorder
                 ),
                 modifier = Modifier
@@ -371,7 +371,7 @@ fun PlayerScreen(
                 Icon(
                     imageVector = Icons.Default.Shuffle,
                     contentDescription = "Aleatorio",
-                    tint = if (playerState.isShuffle) StudioCobalt else TextMuted,
+                    tint = if (playerState.isShuffle) MaterialTheme.colorScheme.primary else TextMuted,
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -402,14 +402,14 @@ fun PlayerScreen(
                     .testTag("player_play_pause_button"),
                 shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = StudioCobalt,
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.Black
                 ),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
             ) {
                 if (playerState.isBuffering) {
                     CircularProgressIndicator(
-                        color = Color.White,
+                        color = Color.Black,
                         modifier = Modifier.size(26.dp),
                         strokeWidth = 2.5.dp
                     )
@@ -452,7 +452,7 @@ fun PlayerScreen(
                         PlayerRepeatMode.OFF -> Icons.Default.Repeat
                     },
                     contentDescription = "Repetición",
-                    tint = if (playerState.repeatMode != PlayerRepeatMode.OFF) StudioCobalt else TextMuted,
+                    tint = if (playerState.repeatMode != PlayerRepeatMode.OFF) MaterialTheme.colorScheme.primary else TextMuted,
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -494,13 +494,13 @@ fun PlayerScreen(
             Icon(
                 imageVector = Icons.Default.QueueMusic,
                 contentDescription = null,
-                tint = StudioCobalt,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = "Cola de reproducción (${playerState.queue.size})",
-                color = StudioCobalt,
+                color = MaterialTheme.colorScheme.primary,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium
             )

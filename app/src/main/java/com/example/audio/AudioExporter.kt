@@ -218,7 +218,7 @@ object AudioExporter {
                 id = System.currentTimeMillis(),
                 title = "$cleanTitle (Edit $speedStr $pitchStr)",
                 artist = song.artist,
-                album = "Editor de Canciones",
+                album = "MeloTune",
                 durationMs = newDurationMs,
                 uri = savedUri,
                 albumArtUri = song.albumArtUri,
@@ -312,10 +312,10 @@ object AudioExporter {
             val values = ContentValues().apply {
                 put(MediaStore.Audio.Media.DISPLAY_NAME, displayName)
                 put(MediaStore.Audio.Media.TITLE, "$originalTitle (Edit $speedStr $pitchStr)")
-                put(MediaStore.Audio.Media.ARTIST, "Editor de Canciones")
-                put(MediaStore.Audio.Media.ALBUM, "Ediciones Guardadas")
+                put(MediaStore.Audio.Media.ARTIST, "MeloTune")
+                put(MediaStore.Audio.Media.ALBUM, "MeloTune")
                 put(MediaStore.Audio.Media.MIME_TYPE, "audio/wav")
-                put(MediaStore.Audio.Media.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/EditorDeCanciones")
+                put(MediaStore.Audio.Media.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/MeloTune")
                 put(MediaStore.Audio.Media.IS_PENDING, 1)
             }
 
@@ -335,7 +335,7 @@ object AudioExporter {
         } else {
             @Suppress("DEPRECATION")
             val musicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
-            val appDir = File(musicDir, "EditorDeCanciones")
+            val appDir = File(musicDir, "MeloTune")
             if (!appDir.exists()) appDir.mkdirs()
             val destFile = File(appDir, displayName)
             tempFile.copyTo(destFile, overwrite = true)

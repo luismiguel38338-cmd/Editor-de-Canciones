@@ -15,7 +15,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -55,6 +54,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -69,15 +69,13 @@ import com.example.ui.screens.PlayerScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.SongEditorScreen
 import com.example.ui.theme.MyApplicationTheme
-import com.example.ui.theme.StudioBg
-import com.example.ui.theme.StudioCobalt
 import com.example.ui.theme.StudioSurface
 import com.example.ui.theme.StudioSurfaceBorder
 import com.example.ui.theme.StudioSurfaceHighlight
-import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 import com.example.ui.viewmodel.NavigationTab
+import com.example.ui.viewmodel.SongEditorUiState
 import com.example.ui.viewmodel.SongEditorViewModel
 
 class MainActivity : ComponentActivity() {
@@ -85,12 +83,18 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MyApplicationTheme {
+            val viewModel: SongEditorViewModel = viewModel()
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+            MyApplicationTheme(
+                themeMode = uiState.themeMode,
+                accentColorChoice = uiState.accentColorChoice
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = StudioBg
+                    color = MaterialTheme.colorScheme.background
                 ) {
-                    SongEditorMainApp()
+                    SongEditorMainApp(viewModel = viewModel, uiState = uiState)
                 }
             }
         }
@@ -99,9 +103,9 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun SongEditorMainApp(
-    viewModel: SongEditorViewModel = viewModel()
+    viewModel: SongEditorViewModel,
+    uiState: SongEditorUiState
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Interceptar Back button para regresar a Biblioteca si estamos en otra pestaña
@@ -120,7 +124,7 @@ fun SongEditorMainApp(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing),
-        containerColor = StudioBg,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             Column(
@@ -149,7 +153,7 @@ fun SongEditorMainApp(
                     }
                 }
 
-                // Barra de navegación inferior con las 5 secciones requeridas
+                // Barra de navegación inferior con las 5 secciones de MeloTune
                 NavigationBar(
                     containerColor = StudioSurface,
                     tonalElevation = 0.dp,
@@ -172,8 +176,8 @@ fun SongEditorMainApp(
                         },
                         label = { Text("Biblioteca", fontSize = 10.sp, fontWeight = FontWeight.Medium) },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = StudioCobalt,
-                            selectedTextColor = StudioCobalt,
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
                             unselectedIconColor = TextSecondary,
                             unselectedTextColor = TextSecondary,
                             indicatorColor = StudioSurfaceHighlight
@@ -192,8 +196,8 @@ fun SongEditorMainApp(
                         },
                         label = { Text("Reproductor", fontSize = 10.sp, fontWeight = FontWeight.Medium) },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = StudioCobalt,
-                            selectedTextColor = StudioCobalt,
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
                             unselectedIconColor = TextSecondary,
                             unselectedTextColor = TextSecondary,
                             indicatorColor = StudioSurfaceHighlight
@@ -212,8 +216,8 @@ fun SongEditorMainApp(
                         },
                         label = { Text("Editor", fontSize = 10.sp, fontWeight = FontWeight.Medium) },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = StudioCobalt,
-                            selectedTextColor = StudioCobalt,
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
                             unselectedIconColor = TextSecondary,
                             unselectedTextColor = TextSecondary,
                             indicatorColor = StudioSurfaceHighlight
@@ -232,8 +236,8 @@ fun SongEditorMainApp(
                         },
                         label = { Text("Exportaciones", fontSize = 10.sp, fontWeight = FontWeight.Medium) },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = StudioCobalt,
-                            selectedTextColor = StudioCobalt,
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
                             unselectedIconColor = TextSecondary,
                             unselectedTextColor = TextSecondary,
                             indicatorColor = StudioSurfaceHighlight
@@ -252,8 +256,8 @@ fun SongEditorMainApp(
                         },
                         label = { Text("Ajustes", fontSize = 10.sp, fontWeight = FontWeight.Medium) },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = StudioCobalt,
-                            selectedTextColor = StudioCobalt,
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
                             unselectedIconColor = TextSecondary,
                             unselectedTextColor = TextSecondary,
                             indicatorColor = StudioSurfaceHighlight
@@ -277,6 +281,13 @@ fun SongEditorMainApp(
                         onPermissionResult = { granted -> viewModel.onPermissionResult(granted) },
                         onSearchQueryChanged = { q -> viewModel.onSearchQueryChanged(q) },
                         onSortOrderChanged = { order -> viewModel.setSortOrder(order) },
+                        onFilterChanged = { filter -> viewModel.setLibraryFilter(filter) },
+                        onToggleFavorite = { song -> viewModel.toggleFavorite(song) },
+                        onPlayNext = { song -> viewModel.playNext(song) },
+                        onAddToQueue = { song -> viewModel.addToQueue(song) },
+                        onOpenSongInEditor = { song -> viewModel.selectSong(song, autoOpenEditor = true) },
+                        onSaveCustomMetadata = { id, title, artist -> viewModel.saveCustomMetadata(id, title, artist) },
+                        onResetCustomMetadata = { id -> viewModel.resetCustomMetadata(id) },
                         onRefresh = { viewModel.loadSongs() },
                         onPickedAudioUri = { uri -> viewModel.onPickedAudioUri(uri) }
                     )
@@ -328,7 +339,6 @@ fun SongEditorMainApp(
                             onDismissError = { viewModel.dismissErrorMessage() }
                         )
                     } else {
-                        // Estado cuando aún no hay pista seleccionada en el Editor
                         EmptyEditorState(
                             onBrowseLibrary = { viewModel.navigateTo(NavigationTab.LIBRARY) }
                         )
@@ -346,6 +356,10 @@ fun SongEditorMainApp(
 
                 NavigationTab.SETTINGS -> {
                     SettingsScreen(
+                        themeMode = uiState.themeMode,
+                        accentColorChoice = uiState.accentColorChoice,
+                        onThemeModeChanged = { mode -> viewModel.setThemeMode(mode) },
+                        onAccentColorChanged = { choice -> viewModel.setAccentColor(choice) },
                         onClearCache = { viewModel.clearCache() }
                     )
                 }
@@ -369,13 +383,13 @@ private fun EmptyEditorState(
             modifier = Modifier
                 .size(72.dp)
                 .clip(CircleShape)
-                .background(StudioCobalt.copy(alpha = 0.12f)),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Tune,
                 contentDescription = null,
-                tint = StudioCobalt,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(36.dp)
             )
         }
@@ -406,7 +420,8 @@ private fun EmptyEditorState(
         Button(
             onClick = onBrowseLibrary,
             colors = ButtonDefaults.buttonColors(
-                containerColor = StudioCobalt
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = Color.Black
             ),
             shape = RoundedCornerShape(10.dp),
             modifier = Modifier.testTag("browse_library_button")

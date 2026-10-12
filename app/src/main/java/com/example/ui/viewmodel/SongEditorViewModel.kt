@@ -16,10 +16,11 @@ import com.example.data.model.Song
 import com.example.data.repository.ExportsRepository
 import com.example.data.repository.SongRepository
 import com.example.service.PlaybackService
+import com.example.ui.theme.AccentColorChoice
+import com.example.ui.theme.AppThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -41,6 +42,12 @@ enum class LibrarySortOrder {
     FAVORITES
 }
 
+enum class LibraryFilter {
+    ALL,
+    FAVORITES,
+    EDITED
+}
+
 data class SongEditorUiState(
     val currentTab: NavigationTab = NavigationTab.LIBRARY,
     val permissionGranted: Boolean = false,
@@ -48,8 +55,11 @@ data class SongEditorUiState(
     val songs: List<Song> = emptyList(),
     val exportedTracks: List<ExportedTrack> = emptyList(),
     val sortOrder: LibrarySortOrder = LibrarySortOrder.TITLE,
+    val libraryFilter: LibraryFilter = LibraryFilter.ALL,
     val searchQuery: String = "",
     val playerState: PlayerState = PlayerState(),
+    val themeMode: AppThemeMode = AppThemeMode.DARK,
+    val accentColorChoice: AccentColorChoice = AccentColorChoice.TURQUOISE,
     val isSaving: Boolean = false,
     val saveProgress: Float = 0f,
     val saveSuccessMessage: String? = null,
@@ -58,8 +68,14 @@ data class SongEditorUiState(
 ) {
     val filteredSongs: List<Song>
         get() {
-            var list = if (searchQuery.isBlank()) songs else {
-                songs.filter {
+            var list = when (libraryFilter) {
+                LibraryFilter.ALL -> songs
+                LibraryFilter.FAVORITES -> songs.filter { it.isFavorite }
+                LibraryFilter.EDITED -> songs.filter { it.isSavedEdit }
+            }
+
+            if (searchQuery.isNotBlank()) {
+                list = list.filter {
                     it.title.contains(searchQuery, ignoreCase = true) ||
                             it.artist.contains(searchQuery, ignoreCase = true) ||
                             it.album.contains(searchQuery, ignoreCase = true)
@@ -81,6 +97,7 @@ data class SongEditorUiState(
     val totalDurationMs: Long get() = playerState.totalDurationMs
     val speed: Float get() = playerState.speed
     val semitones: Int get() = playerState.semitones
+    val pitchFactor: Float get() = playerState.pitchFactor
     val equalizerConfig: EqualizerConfig get() = playerState.equalizerConfig
 }
 
@@ -90,7 +107,12 @@ class SongEditorViewModel(application: Application) : AndroidViewModel(applicati
     private val exportsRepository = ExportsRepository(application)
     val playerManager = MusicPlayerManager.getInstance(application)
 
-    private val _uiState = MutableStateFlow(SongEditorUiState())
+    private val _uiState = MutableStateFlow(
+        SongEditorUiState(
+            themeMode = songRepository.getThemeMode(),
+            accentColorChoice = songRepository.getAccentColor()
+        )
+    )
     val uiState: StateFlow<SongEditorUiState> = combine(
         _uiState,
         playerManager.playerState
@@ -103,18 +125,13 @@ class SongEditorViewModel(application: Application) : AndroidViewModel(applicati
     )
 
     init {
-        startPlaybackService()
         loadExports()
     }
 
     private fun startPlaybackService() {
         try {
             val intent = Intent(getApplication(), PlaybackService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                getApplication<Application>().startForegroundService(intent)
-            } else {
-                getApplication<Application>().startService(intent)
-            }
+            getApplication<Application>().startService(intent)
         } catch (_: Exception) {}
     }
 
@@ -161,11 +178,75 @@ class SongEditorViewModel(application: Application) : AndroidViewModel(applicati
         _uiState.update { it.copy(sortOrder = order) }
     }
 
+    fun setLibraryFilter(filter: LibraryFilter) {
+        _uiState.update { it.copy(libraryFilter = filter) }
+    }
+
+    // Preferencias de personalización
+    fun setThemeMode(mode: AppThemeMode) {
+        songRepository.setThemeMode(mode)
+        _uiState.update { it.copy(themeMode = mode) }
+    }
+
+    fun setAccentColor(choice: AccentColorChoice) {
+        songRepository.setAccentColor(choice)
+        _uiState.update { it.copy(accentColorChoice = choice) }
+    }
+
+    fun saveCustomMetadata(songId: Long, customTitle: String?, customArtist: String?) {
+        songRepository.saveCustomMetadata(songId, customTitle, customArtist)
+        _uiState.update { state ->
+            val updatedSongs = state.songs.map { song ->
+                if (song.id == songId) {
+                    val finalTitle = if (!customTitle.isNullOrBlank()) customTitle.trim() else song.originalTitle
+                    val finalArtist = if (!customArtist.isNullOrBlank()) customArtist.trim() else song.originalArtist
+                    val hasCustom = !customTitle.isNullOrBlank() || !customArtist.isNullOrBlank()
+                    val updated = song.copy(
+                        title = finalTitle,
+                        artist = finalArtist,
+                        hasCustomMetadata = hasCustom
+                    )
+                    playerManager.updateSongMetadata(updated)
+                    updated
+                } else song
+            }
+            state.copy(
+                songs = updatedSongs,
+                infoMessage = "Metadatos personalizados guardados. El archivo de audio original permanece intacto."
+            )
+        }
+    }
+
+    fun resetCustomMetadata(songId: Long) {
+        songRepository.resetCustomMetadata(songId)
+        _uiState.update { state ->
+            val updatedSongs = state.songs.map { song ->
+                if (song.id == songId) {
+                    val updated = song.copy(
+                        title = song.originalTitle,
+                        artist = song.originalArtist,
+                        hasCustomMetadata = false
+                    )
+                    playerManager.updateSongMetadata(updated)
+                    updated
+                } else song
+            }
+            state.copy(
+                songs = updatedSongs,
+                infoMessage = "Metadatos restaurados a los originales."
+            )
+        }
+    }
+
     fun toggleFavorite(song: Song) {
         val isFav = songRepository.toggleFavorite(song.id)
         _uiState.update { state ->
             val updated = state.songs.map {
-                if (it.id == song.id) it.copy(isFavorite = isFav) else it
+                if (it.id == song.id) {
+                    val modified = it.copy(isFavorite = isFav)
+                    playerManager.updateSongMetadata(modified)
+                    modified
+                } else it
             }
             state.copy(songs = updated)
         }
@@ -188,6 +269,16 @@ class SongEditorViewModel(application: Application) : AndroidViewModel(applicati
         } else if (autoOpenPlayer) {
             navigateTo(NavigationTab.PLAYER)
         }
+    }
+
+    fun playNext(song: Song) {
+        playerManager.playNext(song)
+        _uiState.update { it.copy(infoMessage = "Se reproducirá a continuación: ${song.title}") }
+    }
+
+    fun addToQueue(song: Song) {
+        playerManager.addToQueue(song)
+        _uiState.update { it.copy(infoMessage = "Añadida al final de la cola: ${song.title}") }
     }
 
     fun toggleLoop() {
@@ -224,11 +315,6 @@ class SongEditorViewModel(application: Application) : AndroidViewModel(applicati
 
     fun toggleShuffle() {
         playerManager.toggleShuffle()
-    }
-
-    fun addToQueue(song: Song) {
-        playerManager.addToQueue(song)
-        _uiState.update { it.copy(infoMessage = "Añadida a la cola: ${song.title}") }
     }
 
     fun removeFromQueue(index: Int) {
@@ -357,7 +443,7 @@ class SongEditorViewModel(application: Application) : AndroidViewModel(applicati
                     state.copy(
                         isSaving = false,
                         saveProgress = 1.0f,
-                        saveSuccessMessage = "¡Copia procesada y guardada como '${savedSong.title}'!\nUbicación: Carpeta Música / EditorDeCanciones. El original permanece intacto."
+                        saveSuccessMessage = "¡Copia procesada y guardada como '${savedSong.title}'!\nUbicación: Carpeta Música / MeloTune. El original permanece intacto."
                     )
                 }
             }.onFailure { err ->

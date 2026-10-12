@@ -1,70 +1,64 @@
-# 🎛️ Editor de Canciones (Android)
+# 🎵 MeloTune — Reproductor Musical Profesional & Editor de Audio (Android)
 
-Aplicación nativa para Android desarrollada en **Kotlin** con **Jetpack Compose**, **Material 3** y arquitectura **MVVM**. Ofrece un entorno de producción musical sobrio y profesional para reproducir, editar velocidad y tono en tiempo real, aplicar ecualización paramétrica de 3 bandas con refuerzo de graves y exportar copias procesadas sin alterar los archivos de origen.
-
----
-
-## 🏛️ Arquitectura y Secciones de la Aplicación
-
-La aplicación se estructura en 4 áreas principales accesibles mediante una barra de navegación ergonómica y un **Mini-Reproductor Persistente**:
-
-1. **Biblioteca:**
-   - Exploración de la colección musical del dispositivo vía `MediaStore`.
-   - Búsqueda en tiempo real por título y artista.
-   - Ordenamiento avanzado por Título (A-Z), Artista o Duración.
-   - Importación directa de archivos de audio locales (`audio/*`) y pistas de prueba sintetizadas para demostración inmediata.
-
-2. **Estudio / Editor & Reproductor:**
-   - **Reproductor y Transporte:** Scrubber de línea de tiempo con lectura precisa en milisegundos, control de volumen con atenuación de pico, salto de ±5s y repetición en bucle.
-   - **Pestaña de Tono y Velocidad:** Fader continuo de velocidad (0.50x a 2.00x) y afinador de semitonos (-12st a +12st) con botones de paso fino y presets.
-   - **Pestaña de Ecualización Paramétrica & Graves:**
-     - Curva visual de respuesta en frecuencia paramétrica en tiempo real.
-     - 3 bandas de ecualización en escala de decibelios (-12 dB a +12 dB): Graves (< 250 Hz), Medios (~1 kHz) y Agudos (> 4 kHz).
-     - Refuerzo de subgraves (*Bass Boost* de 0% a 100%).
-     - Restablecimiento instantáneo a curva plana (0 dB).
-   - **Exportación Procesada:** Renderizado en segundo plano con indicador porcentual sin congelar la interfaz.
-
-3. **Exportaciones:**
-   - Historial y gestor de todas las pistas procesadas en `Música / EditorDeCanciones`.
-   - Fichas técnicas con tamaño exacto en MB, duración y fecha/hora de renderizado.
-   - Reproducción directa, opción de compartir archivo mediante la hoja de Android (`Intent.ACTION_SEND`) y eliminación con confirmación.
-
-4. **Ajustes:**
-   - Información técnica del pipeline DSP (WAV 16-bit PCM, Sonic, Filtros IIR Biquad Direct Form II).
-   - Verificación de la integridad de los archivos originales (estrictamente de solo lectura).
-   - Herramienta de optimización y limpieza de caché temporal de renderizado.
+**MeloTune** es un reproductor de música moderno y profesional para Android desarrollado en **Kotlin**, **Jetpack Compose**, **Material 3** y **AndroidX Media3**. Diseñado con una identidad visual inspirada en estudios musicales de alta fidelidad (negro grafito, superficies carbón y acentos turquesa), combina la velocidad y ergonomía de reproductores de referencia como *Poweramp*, *Musicolet*, *VLC*, *AIMP* y *Oto Music* con un potente motor de edición de audio y procesamiento digital en tiempo real.
 
 ---
 
-## 🎧 Procesamiento Digital de Audio (DSP) Real
+## ✨ Características Principales
 
-A diferencia de interfaces meramente decorativas, el procesamiento es **real**:
-- **Reproducción en vivo:** `ExoPlayer` aplica `PlaybackParameters` para la velocidad y el tono con el motor Sonic, y se acopla a `android.media.audiofx.Equalizer` y `BassBoost` para la ecualización analógica en hardware.
-- **Exportación sin pérdidas:** Decodificación a PCM 16-bit mediante `MediaExtractor` y `MediaCodec`. Los buffers pasan por `SonicAudioProcessor` y por filtros digitales IIR Biquad (`LowShelf`, `Peaking`, `HighShelf`) antes de empaquetarse en un contenedor WAV RIFF estándar.
+### 1. 🎶 Reproducción Continua y Cola Inteligente
+- **Cola Dinámica:** Añadir canciones, reordenar pistas, remover elementos o seleccionar pistas al vuelo sin detener la reproducción.
+- **Reproducción Continua:** Transición automática a la siguiente canción al concluir la pista.
+- **Modos de Reproducción:** Repetición desactivada, repetir una canción (`Repeat 1`), repetir toda la cola (`Repeat All`) y modo aleatorio (`Shuffle`).
+- **Temporizador de Apagado (Sleep Timer):** Apagado gradual automático programable (15, 30, 45, 60 minutos o tiempo personalizado).
+
+### 2. 📱 Pantalla de Reproducción Inmersiva
+- Carátula de alta resolución con esquinas redondeadas.
+- Metadatos limpios: título, artista, álbum y duración.
+- Barra de progreso interactiva con lectura de tiempo transcurrido y restante.
+- Botones ergonómicos diseñados para uso fluido con una sola mano.
+- Mini-reproductor persistente en la parte inferior durante la navegación entre pestañas.
+
+### 3. 🔔 Integración Nativa Android (Media3 & MediaSession)
+- **Servicio en segundo plano:** `PlaybackService` basado en `androidx.media3.session.MediaSessionService`.
+- **Controles del Sistema:** Integración con la barra de notificaciones de Android, pantalla de bloqueo y dispositivos conectados (auriculares Bluetooth y controles multimedia del coche).
+
+### 4. 🎨 Identidad Visual y Personalización (MeloTune)
+- **Superficies Elegantes:** Negro grafito profundo (`#0B0D13`), superficies carbón y acento turquesa distintivo (`#00E5BF`).
+- **Selector de Temas:** Modo Oscuro (predeterminado), Modo Claro y Modo Automático (según sistema).
+- **Colores de Acento:** Turquesa MeloTune, Azul Océano, Violeta Neón, Esmeralda y Ámbar.
+- **Personalización de Metadatos:** Edición de títulos y artistas mostrados guardados en preferencias sin alterar el archivo original.
+
+### 5. 🎚️ Estudio de Edición & DSP Real
+- **Control de Velocidad:** Modificación continua de 0.50x a 2.00x mediante Sonic time-stretching preservando la afinación.
+- **Afinador de Tono (Pitch Shifting):** Desplazamiento armónico de ±12 semitonos.
+- **Ecualizador Paramétrico de 3 Bandas:** Graves (< 250 Hz), Medios (1 kHz) y Agudos (> 4 kHz) de -12 dB a +12 dB.
+- **Refuerzo de Graves (Bass Boost):** Ajuste porcentual de 0% a 100%.
+- **Exportación WAV 16-bit:** Procesamiento offline sin compresión guardado en la carpeta de Música, manteniendo 100% intacto el archivo original.
 
 ---
 
-## 🛠️ Stack Tecnológico
+## 🏛️ Estructura del Proyecto
 
-- **Lenguaje:** Kotlin 2.x
-- **UI Toolkit:** Jetpack Compose (Material 3 Dark Graphite & Charcoal)
-- **Audio Core:** AndroidX Media3 (ExoPlayer 1.5.1 + Sonic DSP)
-- **Filtros DSP:** Biquad IIR Direct Form II implementado en PCM
-- **Arquitectura:** MVVM (Model-View-ViewModel) con `StateFlow` reactivo
-- **Pruebas:** JUnit 4 + Robolectric JVM
-
----
-
-## 📦 Compilación y Pruebas
-
-```bash
-# Otorgar permisos de ejecución
-chmod +x gradlew
-
-# Ejecutar pruebas unitarias y de DSP
-./gradlew testDebugUnitTest
-
-# Compilar APK de depuración
-./gradlew assembleDebug
 ```
-El APK se genera en `app/build/outputs/apk/debug/app-debug.apk`.
+app/src/main/java/com/example/
+├── MainActivity.kt               # Contenedor principal Compose y barra de navegación
+├── audio/
+│   ├── AudioExporter.kt          # Exportador DSP a WAV PCM 16-bit
+│   ├── LiveAudioEffects.kt       # Efectos de audio en hardware
+│   └── MusicPlayerManager.kt     # Singleton de ExoPlayer y gestión de estado
+├── data/
+│   ├── model/                    # Modelos de datos (Song, ExportedTrack)
+│   └── repository/               # Repositorios (SongRepository, ExportsRepository, Preferences)
+├── service/
+│   └── PlaybackService.kt        # Servicio MediaSessionService para Android Media3
+└── ui/
+    ├── components/               # MiniPlayerBar, SongItem, QueueBottomSheet
+    ├── screens/                  # LibraryScreen, PlayerScreen, SongEditorScreen, ExportsScreen, SettingsScreen
+    └── theme/                    # Color, Theme, Type con paleta MeloTune
+```
+
+---
+
+## 🔒 Nota sobre el Identificador de Paquete
+El `applicationId` configurado en `app/build.gradle.kts` es `com.aistudio.musicstudio.zqvlme` con namespace `com.example`. Se mantiene sin cambios para preservar la compatibilidad binaria, firma criptográfica del keystore, continuidad en la instalación del dispositivo y persistencia de las preferencias locales del usuario.

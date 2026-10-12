@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,14 +19,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.ColorLens
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -40,20 +46,23 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.AccentColorChoice
+import com.example.ui.theme.AppThemeMode
+import com.example.ui.theme.MeloTurquoise
 import com.example.ui.theme.StudioBg
-import com.example.ui.theme.StudioCobalt
-import com.example.ui.theme.StudioEmerald
-import com.example.ui.theme.StudioIndigo
 import com.example.ui.theme.StudioSurface
 import com.example.ui.theme.StudioSurfaceBorder
 import com.example.ui.theme.StudioSurfaceElevated
 import com.example.ui.theme.StudioSurfaceHighlight
-import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 
 @Composable
 fun SettingsScreen(
+    themeMode: AppThemeMode,
+    accentColorChoice: AccentColorChoice,
+    onThemeModeChanged: (AppThemeMode) -> Unit,
+    onAccentColorChanged: (AccentColorChoice) -> Unit,
     onClearCache: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -68,14 +77,14 @@ fun SettingsScreen(
     ) {
         // Título
         Text(
-            text = "Ajustes",
+            text = "Ajustes y Personalización",
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary
             )
         )
         Text(
-            text = "Configuración del motor de audio y almacenamiento",
+            text = "Personaliza la apariencia y el comportamiento de MeloTune",
             style = MaterialTheme.typography.bodySmall.copy(
                 color = TextSecondary
             )
@@ -83,8 +92,145 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        // SECCIÓN: PERSONALIZACIÓN VISUAL
+        SectionTitle(title = "Apariencia y Tema")
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(StudioSurface)
+                .border(1.dp, StudioSurfaceBorder, RoundedCornerShape(12.dp))
+                .padding(16.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Modo de Tema
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.DarkMode,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "Modo de Pantalla",
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextPrimary,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = "Elige la estética visual general",
+                            color = TextSecondary,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    AppThemeMode.values().forEach { mode ->
+                        FilterChip(
+                            selected = themeMode == mode,
+                            onClick = { onThemeModeChanged(mode) },
+                            label = { Text(mode.displayName, fontSize = 12.sp) },
+                            modifier = Modifier.weight(1f),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                selectedLabelColor = MaterialTheme.colorScheme.primary,
+                                containerColor = StudioSurfaceElevated,
+                                labelColor = TextSecondary
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = themeMode == mode,
+                                borderColor = StudioSurfaceBorder,
+                                selectedBorderColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                // Selector de Color de Acento
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Palette,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "Color de Acento",
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextPrimary,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = "Acento para botones, controles y luces de estado",
+                            color = TextSecondary,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AccentColorChoice.values().forEach { choice ->
+                        val isSelected = accentColorChoice == choice
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .clickable { onAccentColorChanged(choice) }
+                                .padding(4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(choice.color)
+                                    .border(
+                                        width = if (isSelected) 3.dp else 1.dp,
+                                        color = if (isSelected) Color.White else StudioSurfaceBorder,
+                                        shape = CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Seleccionado",
+                                        tint = if (choice == AccentColorChoice.TURQUOISE || choice == AccentColorChoice.AMBER) Color.Black else Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = choice.displayName.substringBefore(" "),
+                                fontSize = 10.sp,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else TextSecondary,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
         // SECCIÓN: MOTOR DE PROCESAMIENTO
-        SectionTitle(title = "Motor de Procesamiento")
+        SectionTitle(title = "Motor de Audio & DSP")
 
         Box(
             modifier = Modifier
@@ -98,14 +244,14 @@ fun SettingsScreen(
                 SettingRow(
                     icon = Icons.Default.MusicNote,
                     title = "Formato de Exportación",
-                    subtitle = "WAV 16-bit PCM sin compresión (Máxima fidelidad acústica)",
+                    subtitle = "WAV 16-bit PCM sin compresión (Fidelidad acústica total)",
                     trailingValue = "WAV"
                 )
 
                 SettingRow(
                     icon = Icons.Default.Memory,
-                    title = "Algoritmo de Tono y Velocidad",
-                    subtitle = "Sonic DSP (Time-stretching y pitch-shifting con preservación armónica)",
+                    title = "Procesador de Tono y Velocidad",
+                    subtitle = "Sonic DSP (Time-stretching continuo y pitch-shifting armónico)",
                     trailingValue = "Sonic"
                 )
 
@@ -121,7 +267,7 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         // SECCIÓN: ALMACENAMIENTO Y SEGURIDAD
-        SectionTitle(title = "Almacenamiento y Archivos")
+        SectionTitle(title = "Almacenamiento y Protección de Datos")
 
         Box(
             modifier = Modifier
@@ -134,15 +280,15 @@ fun SettingsScreen(
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 SettingRow(
                     icon = Icons.Default.Folder,
-                    title = "Ruta de Guardado",
-                    subtitle = "Almacenamiento compartido / Música / EditorDeCanciones",
+                    title = "Ruta de Guardado de Exportaciones",
+                    subtitle = "Almacenamiento compartido / Música / MeloTune",
                     trailingValue = null
                 )
 
                 SettingRow(
                     icon = Icons.Default.Security,
-                    title = "Integridad de los Originales",
-                    subtitle = "Las canciones fuente se abren estrictamente en modo de solo lectura y nunca se sobrescriben.",
+                    title = "Protección de Archivos Originales",
+                    subtitle = "Tus archivos originales de música permanecen estrictamente intactos. Las ediciones se guardan como copias separadas.",
                     trailingValue = "Seguro"
                 )
 
@@ -164,7 +310,7 @@ fun SettingsScreen(
                         imageVector = Icons.Default.CleaningServices,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = StudioCobalt
+                        tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
@@ -179,7 +325,7 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         // SECCIÓN: ACERCA DE LA APLICACIÓN
-        SectionTitle(title = "Acerca de")
+        SectionTitle(title = "Acerca de MeloTune")
 
         Box(
             modifier = Modifier
@@ -195,14 +341,14 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Editor de Canciones", fontWeight = FontWeight.SemiBold, color = TextPrimary, fontSize = 14.sp)
+                    Text("MeloTune", fontWeight = FontWeight.Bold, color = TextPrimary, fontSize = 16.sp)
                     Surface(
                         color = StudioSurfaceHighlight,
                         shape = RoundedCornerShape(6.dp)
                     ) {
                         Text(
                             text = "v1.0 Producción",
-                            color = StudioCobalt,
+                            color = MaterialTheme.colorScheme.primary,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
@@ -211,7 +357,7 @@ fun SettingsScreen(
                 }
 
                 Text(
-                    text = "Desarrollado con Kotlin, Jetpack Compose, Material 3 y AndroidX Media3 para edición digital de audio en tiempo real.",
+                    text = "Reproductor musical y estudio de audio desarrollado con Kotlin, Jetpack Compose, Material 3 y AndroidX Media3.",
                     color = TextSecondary,
                     fontSize = 12.sp
                 )
@@ -227,7 +373,7 @@ private fun SectionTitle(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.titleSmall.copy(
-            color = StudioCobalt,
+            color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.5.sp
         ),
@@ -256,7 +402,7 @@ private fun SettingRow(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = StudioCobalt,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(18.dp)
             )
         }

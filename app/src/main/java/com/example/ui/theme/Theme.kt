@@ -1,36 +1,83 @@
 package com.example.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val StudioColorScheme = darkColorScheme(
-    primary = StudioCobalt,
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = StudioCobaltMuted,
-    onPrimaryContainer = Color(0xFFDBEAFE),
+enum class AppThemeMode(val displayName: String) {
+    DARK("Modo Oscuro"),
+    LIGHT("Modo Claro"),
+    SYSTEM("Seguir el Sistema")
+}
 
-    secondary = StudioIndigo,
+enum class AccentColorChoice(val displayName: String, val color: Color) {
+    TURQUOISE("Turquesa MeloTune", AccentTurquoise),
+    COBALT("Azul Océano", AccentCobalt),
+    PURPLE("Violeta Neón", AccentPurple),
+    EMERALD("Esmeralda", AccentEmerald),
+    AMBER("Ámbar", AccentAmber)
+}
+
+fun createMeloDarkColorScheme(accent: Color = MeloTurquoise) = darkColorScheme(
+    primary = accent,
+    onPrimary = Color(0xFF000000),
+    primaryContainer = accent.copy(alpha = 0.25f),
+    onPrimaryContainer = Color(0xFFE6FFFA),
+
+    secondary = Color(0xFFA855F7),
     onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFF312E81),
-    onSecondaryContainer = Color(0xFFE0E7FF),
+    secondaryContainer = Color(0xFF3B0764),
+    onSecondaryContainer = Color(0xFFF3E8FF),
 
-    tertiary = StudioAmber,
-    onTertiary = Color(0xFFFFFFFF),
+    tertiary = AccentAmber,
+    onTertiary = Color(0xFF000000),
     tertiaryContainer = Color(0xFF78350F),
     onTertiaryContainer = Color(0xFFFEF3C7),
 
-    background = StudioBg,
-    onBackground = TextPrimary,
+    background = MeloBgDark,
+    onBackground = TextPrimaryDark,
 
-    surface = StudioSurface,
-    onSurface = TextPrimary,
-    surfaceVariant = StudioSurfaceElevated,
-    onSurfaceVariant = TextSecondary,
+    surface = MeloSurfaceDark,
+    onSurface = TextPrimaryDark,
+    surfaceVariant = MeloSurfaceElevatedDark,
+    onSurfaceVariant = TextSecondaryDark,
 
-    outline = StudioSurfaceBorder,
-    outlineVariant = StudioSurfaceHighlight,
+    outline = MeloSurfaceBorderDark,
+    outlineVariant = MeloSurfaceHighlightDark,
+
+    error = StudioCrimson,
+    onError = Color.White
+)
+
+fun createMeloLightColorScheme(accent: Color = MeloTurquoise) = lightColorScheme(
+    primary = accent,
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = accent.copy(alpha = 0.15f),
+    onPrimaryContainer = Color(0xFF00382E),
+
+    secondary = Color(0xFF8B5CF6),
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFFEDE9FE),
+    onSecondaryContainer = Color(0xFF3B0764),
+
+    tertiary = AccentAmber,
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFFEF3C7),
+    onTertiaryContainer = Color(0xFF78350F),
+
+    background = MeloBgLight,
+    onBackground = TextPrimaryLight,
+
+    surface = MeloSurfaceLight,
+    onSurface = TextPrimaryLight,
+    surfaceVariant = MeloSurfaceElevatedLight,
+    onSurfaceVariant = TextSecondaryLight,
+
+    outline = MeloSurfaceBorderLight,
+    outlineVariant = MeloSurfaceHighlightLight,
 
     error = StudioCrimson,
     onError = Color.White
@@ -38,10 +85,24 @@ private val StudioColorScheme = darkColorScheme(
 
 @Composable
 fun MyApplicationTheme(
+    themeMode: AppThemeMode = AppThemeMode.DARK,
+    accentColorChoice: AccentColorChoice = AccentColorChoice.TURQUOISE,
     content: @Composable () -> Unit
 ) {
+    val isDark = when (themeMode) {
+        AppThemeMode.DARK -> true
+        AppThemeMode.LIGHT -> false
+        AppThemeMode.SYSTEM -> isSystemInDarkTheme()
+    }
+
+    val colorScheme = if (isDark) {
+        createMeloDarkColorScheme(accentColorChoice.color)
+    } else {
+        createMeloLightColorScheme(accentColorChoice.color)
+    }
+
     MaterialTheme(
-        colorScheme = StudioColorScheme,
+        colorScheme = colorScheme,
         typography = Typography,
         content = content
     )

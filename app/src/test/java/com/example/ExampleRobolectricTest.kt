@@ -27,7 +27,7 @@ class ExampleRobolectricTest {
     fun `read string from context matches app name`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val appName = context.getString(R.string.app_name)
-        assertEquals("Editor de Canciones", appName)
+        assertEquals("MeloTune", appName)
     }
 
     @Test
@@ -46,13 +46,13 @@ class ExampleRobolectricTest {
 
     @Test
     fun `pitch factor semitone calculation is accurate`() {
-        val neutralState = SongEditorUiState(semitones = 0)
+        val neutralState = SongEditorUiState(playerState = com.example.audio.PlayerState(semitones = 0))
         assertEquals(1.0f, neutralState.pitchFactor, 0.001f)
 
-        val octaveUpState = SongEditorUiState(semitones = 12)
+        val octaveUpState = SongEditorUiState(playerState = com.example.audio.PlayerState(semitones = 12))
         assertEquals(2.0f, octaveUpState.pitchFactor, 0.001f)
 
-        val octaveDownState = SongEditorUiState(semitones = -12)
+        val octaveDownState = SongEditorUiState(playerState = com.example.audio.PlayerState(semitones = -12))
         assertEquals(0.5f, octaveDownState.pitchFactor, 0.001f)
     }
 
