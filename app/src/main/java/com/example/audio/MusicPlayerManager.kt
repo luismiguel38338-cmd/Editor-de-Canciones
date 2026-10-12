@@ -158,6 +158,19 @@ class MusicPlayerManager private constructor(private val context: Context) {
     }
 
     fun playSong(song: Song, newQueue: List<Song>? = null) {
+        val current = _playerState.value.currentSong
+        if (current?.id == song.id && (exoPlayer.playbackState == Player.STATE_READY || exoPlayer.playbackState == Player.STATE_BUFFERING)) {
+            // La canción ya está cargada en el reproductor. Si está pausada, reanudarla sin recargar.
+            if (!exoPlayer.isPlaying) {
+                exoPlayer.play()
+            }
+            if (newQueue != null && newQueue != _playerState.value.queue) {
+                val index = newQueue.indexOfFirst { it.id == song.id }.coerceAtLeast(0)
+                _playerState.update { it.copy(queue = newQueue, currentIndex = index) }
+            }
+            return
+        }
+
         val queue = newQueue ?: if (_playerState.value.queue.contains(song)) _playerState.value.queue else listOf(song)
         val index = queue.indexOfFirst { it.id == song.id }.coerceAtLeast(0)
 
@@ -470,14 +483,18 @@ class MusicPlayerManager private constructor(private val context: Context) {
         progressJob = scope.launch {
             while (isActive) {
                 if (exoPlayer.isPlaying) {
+                    val pos = exoPlayer.currentPosition.coerceAtLeast(0L)
+                    val dur = exoPlayer.duration.coerceAtLeast(0L)
                     _playerState.update {
-                        it.copy(
-                            currentPositionMs = exoPlayer.currentPosition.coerceAtLeast(0L),
-                            totalDurationMs = exoPlayer.duration.coerceAtLeast(0L)
-                        )
+                        if (it.currentPositionMs != pos || it.totalDurationMs != dur) {
+                            it.copy(
+                                currentPositionMs = pos,
+                                totalDurationMs = dur
+                            )
+                        } else it
                     }
                 }
-                delay(100)
+                delay(250)
             }
         }
     }

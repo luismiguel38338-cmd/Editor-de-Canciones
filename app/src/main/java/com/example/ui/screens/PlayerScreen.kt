@@ -59,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -66,6 +67,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.audio.PlayerRepeatMode
 import com.example.audio.PlayerState
 import com.example.data.model.Song
@@ -260,8 +262,14 @@ fun PlayerScreen(
             contentAlignment = Alignment.Center
         ) {
             if (currentSong.albumArtUri != null) {
+                val context = LocalContext.current
                 AsyncImage(
-                    model = currentSong.albumArtUri,
+                    model = remember(currentSong.albumArtUri) {
+                        ImageRequest.Builder(context)
+                            .data(currentSong.albumArtUri)
+                            .crossfade(true)
+                            .build()
+                    },
                     contentDescription = "Carátula de ${currentSong.title}",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop

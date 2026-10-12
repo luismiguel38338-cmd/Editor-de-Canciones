@@ -3,6 +3,6 @@
     <item
         android:width="66dp"
         android:height="66dp"
-        android:drawable="@drawable/ic_launcher_music_1791716511236"
+        android:drawable="@drawable/melotune_logo_icon_1791806193656"
         android:gravity="center" />
 </layer-list>

@@ -41,12 +41,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.data.model.Song
 import com.example.ui.theme.MeloTurquoise
 import com.example.ui.theme.StudioCrimson
@@ -96,8 +98,14 @@ fun SongItem(
             contentAlignment = Alignment.Center
         ) {
             if (song.albumArtUri != null) {
+                val context = LocalContext.current
                 AsyncImage(
-                    model = song.albumArtUri,
+                    model = remember(song.albumArtUri) {
+                        ImageRequest.Builder(context)
+                            .data(song.albumArtUri)
+                            .crossfade(true)
+                            .build()
+                    },
                     contentDescription = "Carátula de ${song.title}",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
