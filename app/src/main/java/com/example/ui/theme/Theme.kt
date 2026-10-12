@@ -21,6 +21,12 @@ enum class AccentColorChoice(val displayName: String, val color: Color) {
     AMBER("Ámbar", AccentAmber)
 }
 
+enum class ControlSizeChoice(val displayName: String, val playButtonDp: Int, val iconButtonDp: Int) {
+    COMPACT("Compacto", 56, 42),
+    NORMAL("Estándar", 64, 48),
+    LARGE("Grande", 74, 54)
+}
+
 fun createMeloDarkColorScheme(accent: Color = MeloTurquoise) = darkColorScheme(
     primary = accent,
     onPrimary = Color(0xFF000000),

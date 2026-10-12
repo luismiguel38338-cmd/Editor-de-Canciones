@@ -18,6 +18,7 @@ import com.example.data.repository.SongRepository
 import com.example.service.PlaybackService
 import com.example.ui.theme.AccentColorChoice
 import com.example.ui.theme.AppThemeMode
+import com.example.ui.theme.ControlSizeChoice
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -29,6 +30,7 @@ import kotlinx.coroutines.launch
 enum class NavigationTab {
     LIBRARY,
     PLAYER,
+    EQUALIZER,
     EDITOR,
     EXPORTS,
     SETTINGS
@@ -45,6 +47,8 @@ enum class LibrarySortOrder {
 enum class LibraryFilter {
     ALL,
     FAVORITES,
+    ALBUMS,
+    ARTISTS,
     EDITED
 }
 
@@ -60,6 +64,7 @@ data class SongEditorUiState(
     val playerState: PlayerState = PlayerState(),
     val themeMode: AppThemeMode = AppThemeMode.DARK,
     val accentColorChoice: AccentColorChoice = AccentColorChoice.TURQUOISE,
+    val controlSizeChoice: ControlSizeChoice = ControlSizeChoice.NORMAL,
     val isSaving: Boolean = false,
     val saveProgress: Float = 0f,
     val saveSuccessMessage: String? = null,
@@ -71,6 +76,8 @@ data class SongEditorUiState(
             var list = when (libraryFilter) {
                 LibraryFilter.ALL -> songs
                 LibraryFilter.FAVORITES -> songs.filter { it.isFavorite }
+                LibraryFilter.ALBUMS -> songs // Filtradas o agrupadas
+                LibraryFilter.ARTISTS -> songs
                 LibraryFilter.EDITED -> songs.filter { it.isSavedEdit }
             }
 
@@ -110,7 +117,8 @@ class SongEditorViewModel(application: Application) : AndroidViewModel(applicati
     private val _uiState = MutableStateFlow(
         SongEditorUiState(
             themeMode = songRepository.getThemeMode(),
-            accentColorChoice = songRepository.getAccentColor()
+            accentColorChoice = songRepository.getAccentColor(),
+            controlSizeChoice = songRepository.getControlSize()
         )
     )
     val uiState: StateFlow<SongEditorUiState> = combine(
@@ -191,6 +199,21 @@ class SongEditorViewModel(application: Application) : AndroidViewModel(applicati
     fun setAccentColor(choice: AccentColorChoice) {
         songRepository.setAccentColor(choice)
         _uiState.update { it.copy(accentColorChoice = choice) }
+    }
+
+    fun setControlSize(choice: ControlSizeChoice) {
+        songRepository.setControlSize(choice)
+        _uiState.update { it.copy(controlSizeChoice = choice) }
+    }
+
+    fun applyEqualizerPreset(bass: Float, mid: Float, treble: Float, boost: Int) {
+        val cfg = EqualizerConfig(
+            bassGainDb = bass,
+            midGainDb = mid,
+            trebleGainDb = treble,
+            bassBoostPercent = boost
+        )
+        playerManager.updateEqualizer(cfg)
     }
 
     fun saveCustomMetadata(songId: Long, customTitle: String?, customArtist: String?) {

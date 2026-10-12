@@ -364,6 +364,46 @@ fun LibraryScreen(
                 )
             }
             item {
+                val albumsCount = uiState.songs.map { it.album }.distinct().size
+                FilterChip(
+                    selected = uiState.libraryFilter == LibraryFilter.ALBUMS,
+                    onClick = { onFilterChanged(LibraryFilter.ALBUMS) },
+                    label = { Text("Álbumes ($albumsCount)", fontSize = 12.sp) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                        selectedLabelColor = MaterialTheme.colorScheme.primary,
+                        containerColor = StudioSurface,
+                        labelColor = TextSecondary
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = uiState.libraryFilter == LibraryFilter.ALBUMS,
+                        borderColor = StudioSurfaceBorder,
+                        selectedBorderColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+            }
+            item {
+                val artistsCount = uiState.songs.map { it.artist }.distinct().size
+                FilterChip(
+                    selected = uiState.libraryFilter == LibraryFilter.ARTISTS,
+                    onClick = { onFilterChanged(LibraryFilter.ARTISTS) },
+                    label = { Text("Artistas ($artistsCount)", fontSize = 12.sp) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                        selectedLabelColor = MaterialTheme.colorScheme.primary,
+                        containerColor = StudioSurface,
+                        labelColor = TextSecondary
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = uiState.libraryFilter == LibraryFilter.ARTISTS,
+                        borderColor = StudioSurfaceBorder,
+                        selectedBorderColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+            }
+            item {
                 val editCount = uiState.songs.count { it.isSavedEdit }
                 FilterChip(
                     selected = uiState.libraryFilter == LibraryFilter.EDITED,
@@ -461,6 +501,10 @@ fun LibraryScreen(
                             "Sin resultados para '${uiState.searchQuery}'"
                         } else if (uiState.libraryFilter == LibraryFilter.FAVORITES) {
                             "Aún no tienes canciones favoritas"
+                        } else if (uiState.libraryFilter == LibraryFilter.ALBUMS) {
+                            "No se encontraron álbumes en el dispositivo"
+                        } else if (uiState.libraryFilter == LibraryFilter.ARTISTS) {
+                            "No se encontraron artistas en el dispositivo"
                         } else if (uiState.libraryFilter == LibraryFilter.EDITED) {
                             "Aún no hay canciones editadas"
                         } else {

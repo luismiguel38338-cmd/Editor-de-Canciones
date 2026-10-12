@@ -9,6 +9,7 @@ import android.provider.OpenableColumns
 import com.example.data.model.Song
 import com.example.ui.theme.AccentColorChoice
 import com.example.ui.theme.AppThemeMode
+import com.example.ui.theme.ControlSizeChoice
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -241,5 +242,18 @@ class SongRepository(private val context: Context) {
 
     fun setAccentColor(choice: AccentColorChoice) {
         prefs.edit().putString("app_accent_color", choice.name).apply()
+    }
+
+    fun getControlSize(): ControlSizeChoice {
+        val saved = prefs.getString("app_control_size", ControlSizeChoice.NORMAL.name)
+        return try {
+            ControlSizeChoice.valueOf(saved ?: ControlSizeChoice.NORMAL.name)
+        } catch (_: Exception) {
+            ControlSizeChoice.NORMAL
+        }
+    }
+
+    fun setControlSize(choice: ControlSizeChoice) {
+        prefs.edit().putString("app_control_size", choice.name).apply()
     }
 }

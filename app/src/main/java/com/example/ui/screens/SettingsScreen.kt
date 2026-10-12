@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.AccentColorChoice
 import com.example.ui.theme.AppThemeMode
+import com.example.ui.theme.ControlSizeChoice
 import com.example.ui.theme.MeloTurquoise
 import com.example.ui.theme.StudioBg
 import com.example.ui.theme.StudioSurface
@@ -61,8 +63,10 @@ import com.example.ui.theme.TextSecondary
 fun SettingsScreen(
     themeMode: AppThemeMode,
     accentColorChoice: AccentColorChoice,
+    controlSizeChoice: ControlSizeChoice = ControlSizeChoice.NORMAL,
     onThemeModeChanged: (AppThemeMode) -> Unit,
     onAccentColorChanged: (AccentColorChoice) -> Unit,
+    onControlSizeChanged: (ControlSizeChoice) -> Unit = {},
     onClearCache: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -222,6 +226,58 @@ fun SettingsScreen(
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                             )
                         }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                // Selector de Tamaño de Controles
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.TouchApp,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "Tamaño de Controles Multimedia",
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextPrimary,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = "Dimensiones de botones de reproducción en pantalla principal",
+                            color = TextSecondary,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ControlSizeChoice.values().forEach { sizeChoice ->
+                        FilterChip(
+                            selected = controlSizeChoice == sizeChoice,
+                            onClick = { onControlSizeChanged(sizeChoice) },
+                            label = { Text(sizeChoice.displayName, fontSize = 12.sp) },
+                            modifier = Modifier.weight(1f),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                selectedLabelColor = MaterialTheme.colorScheme.primary,
+                                containerColor = StudioSurfaceElevated,
+                                labelColor = TextSecondary
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = controlSizeChoice == sizeChoice,
+                                borderColor = StudioSurfaceBorder,
+                                selectedBorderColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
                     }
                 }
             }

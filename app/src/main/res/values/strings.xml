@@ -8,7 +8,6 @@
     <string name="no_songs_found">No se encontraron canciones</string>
     <string name="no_songs_desc">No hay canciones en tu biblioteca o no se han sincronizado aún.</string>
     <string name="pick_audio_file">Seleccionar archivo de audio</string>
-    <string name="load_sample_tracks">Cargar pistas de prueba</string>
     <string name="track_editor_title">Estudio de Edición</string>
     <string name="speed_label">Velocidad</string>
     <string name="pitch_label">Tono (Pitch)</string>

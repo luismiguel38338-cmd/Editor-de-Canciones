@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bedtime
+import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.GraphicEq
@@ -69,6 +70,7 @@ import com.example.audio.PlayerRepeatMode
 import com.example.audio.PlayerState
 import com.example.data.model.Song
 import com.example.ui.components.QueueBottomSheet
+import com.example.ui.theme.ControlSizeChoice
 import com.example.ui.theme.StudioBg
 import com.example.ui.theme.StudioCobalt
 import com.example.ui.theme.StudioCrimson
@@ -96,6 +98,8 @@ fun PlayerScreen(
     onRemoveFromQueue: (Int) -> Unit,
     onSetSleepTimer: (Int?) -> Unit,
     onOpenEditor: () -> Unit,
+    onOpenEqualizer: (() -> Unit)? = null,
+    controlSizeChoice: ControlSizeChoice = ControlSizeChoice.NORMAL,
     modifier: Modifier = Modifier
 ) {
     val currentSong = playerState.currentSong
@@ -202,22 +206,44 @@ fun PlayerScreen(
                 }
             }
 
-            // Acceso al Estudio / Ecualizador
-            IconButton(
-                onClick = onOpenEditor,
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(StudioSurface)
-                    .border(1.dp, StudioSurfaceBorder, CircleShape)
-                    .testTag("open_editor_from_player")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Tune,
-                    contentDescription = "Abrir ecualizador y editor",
-                    tint = TextSecondary,
-                    modifier = Modifier.size(18.dp)
-                )
+            // Acceso al Ecualizador y al Editor
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (onOpenEqualizer != null) {
+                    IconButton(
+                        onClick = onOpenEqualizer,
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(StudioSurface)
+                            .border(1.dp, StudioSurfaceBorder, CircleShape)
+                            .testTag("open_equalizer_from_player")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Equalizer,
+                            contentDescription = "Abrir ecualizador",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
+
+                IconButton(
+                    onClick = onOpenEditor,
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(StudioSurface)
+                        .border(1.dp, StudioSurfaceBorder, CircleShape)
+                        .testTag("open_editor_from_player")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Tune,
+                        contentDescription = "Abrir editor de audio",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
 
@@ -381,7 +407,7 @@ fun PlayerScreen(
                 onClick = onSkipToPrevious,
                 enabled = playerState.hasPrevious,
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(controlSizeChoice.iconButtonDp.dp)
                     .clip(CircleShape)
                     .background(StudioSurfaceHighlight)
                     .testTag("player_skip_previous_button")
@@ -390,7 +416,7 @@ fun PlayerScreen(
                     imageVector = Icons.Default.SkipPrevious,
                     contentDescription = "Canción anterior",
                     tint = if (playerState.hasPrevious) TextPrimary else TextMuted,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size((controlSizeChoice.iconButtonDp / 2 + 2).dp)
                 )
             }
 
@@ -398,7 +424,7 @@ fun PlayerScreen(
             Button(
                 onClick = onTogglePlayPause,
                 modifier = Modifier
-                    .size(64.dp)
+                    .size(controlSizeChoice.playButtonDp.dp)
                     .testTag("player_play_pause_button"),
                 shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(
@@ -417,7 +443,7 @@ fun PlayerScreen(
                     Icon(
                         imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                         contentDescription = if (playerState.isPlaying) "Pausar" else "Reproducir",
-                        modifier = Modifier.size(34.dp)
+                        modifier = Modifier.size((controlSizeChoice.playButtonDp / 2 + 2).dp)
                     )
                 }
             }
@@ -427,7 +453,7 @@ fun PlayerScreen(
                 onClick = onSkipToNext,
                 enabled = playerState.hasNext,
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(controlSizeChoice.iconButtonDp.dp)
                     .clip(CircleShape)
                     .background(StudioSurfaceHighlight)
                     .testTag("player_skip_next_button")
@@ -436,7 +462,7 @@ fun PlayerScreen(
                     imageVector = Icons.Default.SkipNext,
                     contentDescription = "Canción siguiente",
                     tint = if (playerState.hasNext) TextPrimary else TextMuted,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size((controlSizeChoice.iconButtonDp / 2 + 2).dp)
                 )
             }
 

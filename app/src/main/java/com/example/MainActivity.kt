@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.FolderShared
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -63,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.components.MiniPlayerBar
+import com.example.ui.screens.EqualizerScreen
 import com.example.ui.screens.ExportsScreen
 import com.example.ui.screens.LibraryScreen
 import com.example.ui.screens.PlayerScreen
@@ -206,6 +208,26 @@ fun SongEditorMainApp(
                     )
 
                     NavigationBarItem(
+                        selected = uiState.currentTab == NavigationTab.EQUALIZER,
+                        onClick = { viewModel.navigateTo(NavigationTab.EQUALIZER) },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.Equalizer,
+                                contentDescription = "Ecualizador"
+                            )
+                        },
+                        label = { Text("Ecualizador", fontSize = 10.sp, fontWeight = FontWeight.Medium) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            unselectedIconColor = TextSecondary,
+                            unselectedTextColor = TextSecondary,
+                            indicatorColor = StudioSurfaceHighlight
+                        ),
+                        modifier = Modifier.testTag("nav_equalizer")
+                    )
+
+                    NavigationBarItem(
                         selected = uiState.currentTab == NavigationTab.EDITOR,
                         onClick = { viewModel.navigateTo(NavigationTab.EDITOR) },
                         icon = {
@@ -307,7 +329,21 @@ fun SongEditorMainApp(
                         onSelectSongFromQueue = { song -> viewModel.playSong(song) },
                         onRemoveFromQueue = { idx -> viewModel.removeFromQueue(idx) },
                         onSetSleepTimer = { mins -> viewModel.setSleepTimer(mins) },
-                        onOpenEditor = { viewModel.navigateTo(NavigationTab.EDITOR) }
+                        onOpenEditor = { viewModel.navigateTo(NavigationTab.EDITOR) },
+                        onOpenEqualizer = { viewModel.navigateTo(NavigationTab.EQUALIZER) },
+                        controlSizeChoice = uiState.controlSizeChoice
+                    )
+                }
+
+                NavigationTab.EQUALIZER -> {
+                    EqualizerScreen(
+                        equalizerConfig = uiState.equalizerConfig,
+                        onBassGainChanged = { db -> viewModel.setBassGain(db) },
+                        onMidGainChanged = { db -> viewModel.setMidGain(db) },
+                        onTrebleGainChanged = { db -> viewModel.setTrebleGain(db) },
+                        onBassBoostChanged = { pct -> viewModel.setBassBoost(pct) },
+                        onResetEqualizer = { viewModel.resetEqualizer() },
+                        onApplyPreset = { b, m, t, boost -> viewModel.applyEqualizerPreset(b, m, t, boost) }
                     )
                 }
 
@@ -358,8 +394,10 @@ fun SongEditorMainApp(
                     SettingsScreen(
                         themeMode = uiState.themeMode,
                         accentColorChoice = uiState.accentColorChoice,
+                        controlSizeChoice = uiState.controlSizeChoice,
                         onThemeModeChanged = { mode -> viewModel.setThemeMode(mode) },
                         onAccentColorChanged = { choice -> viewModel.setAccentColor(choice) },
+                        onControlSizeChanged = { size -> viewModel.setControlSize(size) },
                         onClearCache = { viewModel.clearCache() }
                     )
                 }
