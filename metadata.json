@@ -1,6 +1,6 @@
 {
   "name": "MeloTune",
-  "description": "Reproductor musical profesional con editor de audio integrado, ecualizador, ajuste de velocidad y tono en tiempo real, y controles multimedia nativos.",
+  "description": "Reproductor musical profesional con biblioteca organizada (canciones, álbumes, artistas, carpetas, listas y favoritos), ecualizador integrado, descubrimiento legal de música y controles multimedia en segundo plano.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

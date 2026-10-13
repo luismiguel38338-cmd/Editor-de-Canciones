@@ -8,7 +8,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 enum class AppThemeMode(val displayName: String) {
-    DARK("Modo Oscuro"),
+    DARK("Modo Oscuro (Grafito)"),
+    AMOLED("Negro Puro AMOLED"),
     LIGHT("Modo Claro"),
     SYSTEM("Seguir el Sistema")
 }
@@ -18,7 +19,16 @@ enum class AccentColorChoice(val displayName: String, val color: Color) {
     COBALT("Azul Océano", AccentCobalt),
     PURPLE("Violeta Neón", AccentPurple),
     EMERALD("Esmeralda", AccentEmerald),
-    AMBER("Ámbar", AccentAmber)
+    AMBER("Ámbar", AccentAmber),
+    RED("Rojo Rubí", Color(0xFFEF4444))
+}
+
+enum class BackgroundGradientChoice(val displayName: String, val colors: List<Color>?) {
+    NONE("Color Sólido", null),
+    TURQUOISE("Degradado Turquesa", listOf(Color(0xFF00382E), Color(0xFF05070B))),
+    BLUE("Degradado Azul Océano", listOf(Color(0xFF0F172A), Color(0xFF030712))),
+    PURPLE("Degradado Violeta", listOf(Color(0xFF2E1065), Color(0xFF090315))),
+    RED("Degradado Rubí", listOf(Color(0xFF450A0A), Color(0xFF0A0202)))
 }
 
 enum class ControlSizeChoice(val displayName: String, val playButtonDp: Int, val iconButtonDp: Int) {
@@ -27,7 +37,7 @@ enum class ControlSizeChoice(val displayName: String, val playButtonDp: Int, val
     LARGE("Grande", 74, 54)
 }
 
-fun createMeloDarkColorScheme(accent: Color = MeloTurquoise) = darkColorScheme(
+fun createMeloDarkColorScheme(accent: Color = MeloTurquoise, isAmoled: Boolean = false) = darkColorScheme(
     primary = accent,
     onPrimary = Color(0xFF000000),
     primaryContainer = accent.copy(alpha = 0.25f),
@@ -43,16 +53,16 @@ fun createMeloDarkColorScheme(accent: Color = MeloTurquoise) = darkColorScheme(
     tertiaryContainer = Color(0xFF78350F),
     onTertiaryContainer = Color(0xFFFEF3C7),
 
-    background = MeloBgDark,
+    background = if (isAmoled) Color(0xFF000000) else MeloBgDark,
     onBackground = TextPrimaryDark,
 
-    surface = MeloSurfaceDark,
+    surface = if (isAmoled) Color(0xFF080808) else MeloSurfaceDark,
     onSurface = TextPrimaryDark,
-    surfaceVariant = MeloSurfaceElevatedDark,
+    surfaceVariant = if (isAmoled) Color(0xFF121212) else MeloSurfaceElevatedDark,
     onSurfaceVariant = TextSecondaryDark,
 
-    outline = MeloSurfaceBorderDark,
-    outlineVariant = MeloSurfaceHighlightDark,
+    outline = if (isAmoled) Color(0xFF1E1E1E) else MeloSurfaceBorderDark,
+    outlineVariant = if (isAmoled) Color(0xFF282828) else MeloSurfaceHighlightDark,
 
     error = StudioCrimson,
     onError = Color.White
@@ -95,14 +105,15 @@ fun MyApplicationTheme(
     accentColorChoice: AccentColorChoice = AccentColorChoice.TURQUOISE,
     content: @Composable () -> Unit
 ) {
+    val isAmoled = themeMode == AppThemeMode.AMOLED
     val isDark = when (themeMode) {
-        AppThemeMode.DARK -> true
+        AppThemeMode.DARK, AppThemeMode.AMOLED -> true
         AppThemeMode.LIGHT -> false
         AppThemeMode.SYSTEM -> isSystemInDarkTheme()
     }
 
     val colorScheme = if (isDark) {
-        createMeloDarkColorScheme(accentColorChoice.color)
+        createMeloDarkColorScheme(accentColorChoice.color, isAmoled)
     } else {
         createMeloLightColorScheme(accentColorChoice.color)
     }

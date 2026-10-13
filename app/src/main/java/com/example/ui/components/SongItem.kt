@@ -69,7 +69,7 @@ fun SongItem(
     onPlayNext: (() -> Unit)? = null,
     onAddToQueue: (() -> Unit)? = null,
     onEditMetadata: (() -> Unit)? = null,
-    onOpenEditor: (() -> Unit)? = null,
+    onAddToPlaylist: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -112,9 +112,9 @@ fun SongItem(
                 )
             } else {
                 Icon(
-                    imageVector = if (song.isSavedEdit) Icons.Default.GraphicEq else Icons.Default.MusicNote,
+                    imageVector = Icons.Default.MusicNote,
                     contentDescription = null,
-                    tint = if (song.isSavedEdit) StudioIndigo else MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -148,21 +148,6 @@ fun SongItem(
                         Text(
                             text = "CUSTOM",
                             color = MeloTurquoise,
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                        )
-                    }
-                } else if (song.isSavedEdit) {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Surface(
-                        color = StudioIndigo.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(4.dp),
-                        border = androidx.compose.foundation.BorderStroke(0.5.dp, StudioIndigo.copy(alpha = 0.4f))
-                    ) {
-                        Text(
-                            text = "EDITADA",
-                            color = StudioIndigo,
                             fontSize = 8.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
@@ -259,14 +244,14 @@ fun SongItem(
                     )
                 }
 
-                if (onOpenEditor != null) {
+                if (onAddToPlaylist != null) {
                     DropdownMenuItem(
-                        text = { Text("Abrir en Estudio / DSP", color = TextPrimary, fontSize = 13.sp) },
+                        text = { Text("Añadir a lista de reproducción", color = TextPrimary, fontSize = 13.sp) },
                         leadingIcon = {
-                            Icon(Icons.Default.Tune, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.PlaylistAdd, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(18.dp))
                         },
                         onClick = {
-                            onOpenEditor()
+                            onAddToPlaylist()
                             showMenu = false
                         }
                     )

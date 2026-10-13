@@ -4,9 +4,11 @@ import android.content.Context
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import com.example.audio.EqualizerConfig
-import com.example.audio.PcmEqualizer
-import com.example.data.model.ExportedTrack
+import com.example.audio.PlayerRepeatMode
+import com.example.audio.PlayerState
 import com.example.data.model.Song
+import com.example.data.repository.SongRepository
+import com.example.ui.viewmodel.LibraryFilter
 import com.example.ui.viewmodel.LibrarySortOrder
 import com.example.ui.viewmodel.SongEditorUiState
 import org.junit.Assert.assertEquals
@@ -16,8 +18,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -42,18 +42,6 @@ class ExampleRobolectricTest {
         )
 
         assertEquals("03:05", song.formattedDuration)
-    }
-
-    @Test
-    fun `pitch factor semitone calculation is accurate`() {
-        val neutralState = SongEditorUiState(playerState = com.example.audio.PlayerState(semitones = 0))
-        assertEquals(1.0f, neutralState.pitchFactor, 0.001f)
-
-        val octaveUpState = SongEditorUiState(playerState = com.example.audio.PlayerState(semitones = 12))
-        assertEquals(2.0f, octaveUpState.pitchFactor, 0.001f)
-
-        val octaveDownState = SongEditorUiState(playerState = com.example.audio.PlayerState(semitones = -12))
-        assertEquals(0.5f, octaveDownState.pitchFactor, 0.001f)
     }
 
     @Test
@@ -95,55 +83,68 @@ class ExampleRobolectricTest {
     }
 
     @Test
-    fun `pcm equalizer processes audio buffer without corruption or NaN`() {
-        val sampleRate = 44100
-        val equalizer = PcmEqualizer(sampleRate)
+    fun `library filter by favorites and playlists works properly`() {
+        val song1 = Song(1L, "Song 1", "Artist", "Album", 100000L, Uri.parse("content://dummy/1"), isFavorite = true)
+        val song2 = Song(2L, "Song 2", "Artist", "Album", 100000L, Uri.parse("content://dummy/2"), isFavorite = false)
 
-        // Configurar boost de graves a +6 dB y agudos a -3 dB
-        val config = EqualizerConfig(bassGainDb = 6f, midGainDb = 0f, trebleGainDb = -3f, bassBoostPercent = 25)
-        equalizer.updateConfig(sampleRate, config)
+        val favState = SongEditorUiState(
+            songs = listOf(song1, song2),
+            libraryFilter = LibraryFilter.FAVORITES
+        )
+        assertEquals(1, favState.filteredSongs.size)
+        assertEquals(1L, favState.filteredSongs.first().id)
 
-        // Crear buffer PCM 16-bit mono con señal senoidal de prueba
-        val sampleCount = 200
-        val pcmBytes = ByteArray(sampleCount * 2)
-        val bb = ByteBuffer.wrap(pcmBytes).order(ByteOrder.LITTLE_ENDIAN)
-        for (i in 0 until sampleCount) {
-            val s = (kotlin.math.sin(i * 0.1) * 10000.0).toInt().toShort()
-            bb.putShort(s)
-        }
-
-        // Procesar
-        equalizer.processPcm16(pcmBytes, channels = 1)
-
-        // Verificar que los bytes siguen siendo números válidos no corrompidos
-        val resultBb = ByteBuffer.wrap(pcmBytes).order(ByteOrder.LITTLE_ENDIAN)
-        var hasNonZero = false
-        for (i in 0 until sampleCount) {
-            val sample = resultBb.getShort()
-            if (sample != 0.toShort()) hasNonZero = true
-            assertTrue("Muestra debe estar en rango válido de 16 bits", sample in -32768..32767)
-        }
-        assertTrue("El buffer procesado contiene audio válido", hasNonZero)
+        val playlistState = SongEditorUiState(
+            songs = listOf(song1, song2),
+            libraryFilter = LibraryFilter.PLAYLISTS,
+            selectedCategory = "Mi Lista",
+            playlists = mapOf("Mi Lista" to listOf(2L))
+        )
+        assertEquals(1, playlistState.filteredSongs.size)
+        assertEquals(2L, playlistState.filteredSongs.first().id)
     }
 
     @Test
-    fun `exported track converts to song and formats size properly`() {
-        val track = ExportedTrack(
-            id = 12345L,
-            title = "Processed Groove",
-            fileName = "processed_groove.wav",
-            uri = Uri.parse("content://dummy/export/1"),
-            sizeBytes = 1048576L * 5, // 5 MB
-            durationMs = 90000L, // 1m 30s
-            dateAddedMs = 1700000000000L
+    fun `player state queue navigation indicators are accurate`() {
+        val song1 = Song(1L, "Track 1", "Artist", "Album", 1000L, Uri.parse("content://dummy/1"))
+        val song2 = Song(2L, "Track 2", "Artist", "Album", 1000L, Uri.parse("content://dummy/2"))
+
+        val stateAtFirst = PlayerState(
+            queue = listOf(song1, song2),
+            currentIndex = 0,
+            repeatMode = PlayerRepeatMode.OFF
         )
+        assertTrue(stateAtFirst.hasNext)
+        assertFalse(stateAtFirst.hasPrevious)
 
-        assertEquals("01:30", track.formattedDuration)
-        assertTrue(track.formattedSize.contains("5.00 MB"))
+        val stateAtLast = PlayerState(
+            queue = listOf(song1, song2),
+            currentIndex = 1,
+            repeatMode = PlayerRepeatMode.OFF
+        )
+        assertFalse(stateAtLast.hasNext)
+        assertTrue(stateAtLast.hasPrevious)
+    }
 
-        val song = track.toSong()
-        assertEquals(track.id, song.id)
-        assertEquals(track.title, song.title)
-        assertTrue(song.isSavedEdit)
+    @Test
+    fun `repository handles playlist persistence correctly`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val repo = SongRepository(context)
+
+        val playlistName = "TestPlaylist_${System.currentTimeMillis()}"
+        val created = repo.createPlaylist(playlistName)
+        assertTrue("Playlist should be created", created)
+        assertTrue("Playlist should be listed", repo.getPlaylistNames().contains(playlistName))
+
+        repo.addSongToPlaylist(playlistName, 999L)
+        val songIds = repo.getPlaylistSongIds(playlistName)
+        assertTrue("Song ID 999 should be in playlist", songIds.contains(999L))
+
+        repo.removeSongFromPlaylist(playlistName, 999L)
+        val afterRemove = repo.getPlaylistSongIds(playlistName)
+        assertFalse("Song ID 999 should be removed", afterRemove.contains(999L))
+
+        repo.deletePlaylist(playlistName)
+        assertFalse("Playlist should be deleted", repo.getPlaylistNames().contains(playlistName))
     }
 }

@@ -99,7 +99,6 @@ fun PlayerScreen(
     onSelectSongFromQueue: (Song) -> Unit,
     onRemoveFromQueue: (Int) -> Unit,
     onSetSleepTimer: (Int?) -> Unit,
-    onOpenEditor: () -> Unit,
     onOpenEqualizer: (() -> Unit)? = null,
     controlSizeChoice: ControlSizeChoice = ControlSizeChoice.NORMAL,
     modifier: Modifier = Modifier
@@ -227,24 +226,6 @@ fun PlayerScreen(
                             modifier = Modifier.size(18.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(6.dp))
-                }
-
-                IconButton(
-                    onClick = onOpenEditor,
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(StudioSurface)
-                        .border(1.dp, StudioSurfaceBorder, CircleShape)
-                        .testTag("open_editor_from_player")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Tune,
-                        contentDescription = "Abrir editor de audio",
-                        tint = TextSecondary,
-                        modifier = Modifier.size(18.dp)
-                    )
                 }
             }
         }
