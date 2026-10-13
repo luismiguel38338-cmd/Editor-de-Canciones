@@ -255,17 +255,11 @@ fun MeloTuneMainApp(
                     }
                 }
 
-                // Barra de navegación inferior con las 5 secciones de MeloTune
+                // Barra de navegación inferior compacta con las 5 secciones de MeloTune
                 NavigationBar(
                     containerColor = StudioSurface,
                     tonalElevation = 0.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(
-                            width = 1.dp,
-                            color = StudioSurfaceBorder,
-                            shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp)
-                        )
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     NavigationBarItem(
                         selected = uiState.currentTab == NavigationTab.LIBRARY,
@@ -276,7 +270,15 @@ fun MeloTuneMainApp(
                                 contentDescription = "Biblioteca"
                             )
                         },
-                        label = { Text("Biblioteca", fontSize = 10.sp, fontWeight = FontWeight.Medium) },
+                        label = {
+                            Text(
+                                text = "Biblioteca",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.primary,
                             selectedTextColor = MaterialTheme.colorScheme.primary,
@@ -296,7 +298,15 @@ fun MeloTuneMainApp(
                                 contentDescription = "Reproductor"
                             )
                         },
-                        label = { Text("Reproductor", fontSize = 10.sp, fontWeight = FontWeight.Medium) },
+                        label = {
+                            Text(
+                                text = "Reproductor",
+                                fontSize = 9.5.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.primary,
                             selectedTextColor = MaterialTheme.colorScheme.primary,
@@ -316,7 +326,15 @@ fun MeloTuneMainApp(
                                 contentDescription = "Ecualizador"
                             )
                         },
-                        label = { Text("Ecualizador", fontSize = 10.sp, fontWeight = FontWeight.Medium) },
+                        label = {
+                            Text(
+                                text = "Ecualizador",
+                                fontSize = 9.5.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.primary,
                             selectedTextColor = MaterialTheme.colorScheme.primary,
@@ -336,7 +354,15 @@ fun MeloTuneMainApp(
                                 contentDescription = "Descubrir"
                             )
                         },
-                        label = { Text("Descubrir", fontSize = 10.sp, fontWeight = FontWeight.Medium) },
+                        label = {
+                            Text(
+                                text = "Descubrir",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.primary,
                             selectedTextColor = MaterialTheme.colorScheme.primary,
@@ -356,7 +382,15 @@ fun MeloTuneMainApp(
                                 contentDescription = "Ajustes"
                             )
                         },
-                        label = { Text("Ajustes", fontSize = 10.sp, fontWeight = FontWeight.Medium) },
+                        label = {
+                            Text(
+                                text = "Ajustes",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.primary,
                             selectedTextColor = MaterialTheme.colorScheme.primary,

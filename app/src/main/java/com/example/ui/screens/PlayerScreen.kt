@@ -1,9 +1,10 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,16 +15,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -33,19 +31,18 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VolumeDown
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -57,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -73,11 +71,8 @@ import com.example.audio.PlayerState
 import com.example.data.model.Song
 import com.example.ui.components.QueueBottomSheet
 import com.example.ui.theme.ControlSizeChoice
-import com.example.ui.theme.StudioBg
-import com.example.ui.theme.StudioCobalt
+import com.example.ui.theme.MeloTurquoise
 import com.example.ui.theme.StudioCrimson
-import com.example.ui.theme.StudioSurface
-import com.example.ui.theme.StudioSurfaceBorder
 import com.example.ui.theme.StudioSurfaceElevated
 import com.example.ui.theme.StudioSurfaceHighlight
 import com.example.ui.theme.TextMuted
@@ -85,6 +80,7 @@ import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayerScreen(
     playerState: PlayerState,
@@ -105,11 +101,29 @@ fun PlayerScreen(
 ) {
     val currentSong = playerState.currentSong
 
+    // Fondo ambiental oscuro elegante con degradado sutil turquesa de MeloTune
+    val dynamicBackground = remember(currentSong?.id) {
+        val topTint = if (currentSong != null) {
+            val hash = (currentSong.id xor currentSong.title.hashCode().toLong())
+            val hueShift = ((hash and 0xFF) / 255f) * 0.15f
+            Color(0xFF071B20).copy(alpha = 0.85f + hueShift)
+        } else {
+            Color(0xFF091216)
+        }
+        Brush.verticalGradient(
+            colors = listOf(
+                topTint,
+                Color(0xFF0C1014),
+                Color(0xFF07090C)
+            )
+        )
+    }
+
     if (currentSong == null) {
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(StudioBg),
+                .background(Color(0xFF0A0C10)),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -120,9 +134,9 @@ fun PlayerScreen(
                     imageVector = Icons.Default.MusicNote,
                     contentDescription = null,
                     tint = TextMuted,
-                    modifier = Modifier.size(54.dp)
+                    modifier = Modifier.size(48.dp)
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
                 Text(
                     text = "Ninguna canción en reproducción",
                     style = MaterialTheme.typography.titleMedium.copy(
@@ -131,9 +145,9 @@ fun PlayerScreen(
                     ),
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Elige una pista de tu biblioteca para reproducirla con calidad de estudio.",
+                    text = "Selecciona una pista en tu biblioteca para comenzar",
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = TextSecondary
                     ),
@@ -154,371 +168,359 @@ fun PlayerScreen(
     val totalDuration = playerState.totalDurationMs.coerceAtLeast(1L)
     val remainingMs = (totalDuration - currentPosition).coerceAtLeast(0L)
 
-    val scrollState = rememberScrollState()
-
-    Column(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .background(StudioBg)
-            .verticalScroll(scrollState)
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(dynamicBackground)
     ) {
-        // Barra superior con acciones de utilidad
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Temporizador de apagado
-            IconButton(
-                onClick = { showSleepTimerDialog = true },
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(if (playerState.sleepTimerRemainingSeconds != null) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else StudioSurface)
-                    .border(1.dp, StudioSurfaceBorder, CircleShape)
-                    .testTag("sleep_timer_button")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Bedtime,
-                    contentDescription = "Temporizador de apagado",
-                    tint = if (playerState.sleepTimerRemainingSeconds != null) MaterialTheme.colorScheme.primary else TextSecondary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
+        val availableHeight = maxHeight
 
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "REPRODUCIENDO",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    letterSpacing = 1.sp
-                )
-                if (playerState.sleepTimerRemainingSeconds != null) {
-                    val mins = playerState.sleepTimerRemainingSeconds / 60
-                    val secs = playerState.sleepTimerRemainingSeconds % 60
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            // 1. Encabezado pequeño con acceso a cola y herramientas discretas
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Acceso a la cola
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable { showQueueSheet = true }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .testTag("open_queue_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.QueueMusic,
+                        contentDescription = "Cola",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Apagado en ${String.format(Locale.US, "%02d:%02d", mins, secs)}",
-                        fontSize = 11.sp,
-                        color = TextSecondary
+                        text = "Cola (${playerState.queue.size})",
+                        color = TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
                     )
                 }
-            }
 
-            // Acceso al Ecualizador y al Editor
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (onOpenEqualizer != null) {
+                // Herramientas discretas (Ecualizador y Sleep Timer)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (onOpenEqualizer != null) {
+                        IconButton(
+                            onClick = onOpenEqualizer,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .testTag("open_equalizer_from_player")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Equalizer,
+                                contentDescription = "Ecualizador",
+                                tint = TextSecondary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
                     IconButton(
-                        onClick = onOpenEqualizer,
+                        onClick = { showSleepTimerDialog = true },
                         modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(StudioSurface)
-                            .border(1.dp, StudioSurfaceBorder, CircleShape)
-                            .testTag("open_equalizer_from_player")
+                            .size(36.dp)
+                            .testTag("sleep_timer_button")
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Equalizer,
-                            contentDescription = "Abrir ecualizador",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
+                            imageVector = Icons.Default.Bedtime,
+                            contentDescription = "Temporizador de apagado",
+                            tint = if (playerState.sleepTimerRemainingSeconds != null) MeloTurquoise else TextSecondary,
+                            modifier = Modifier.size(19.dp)
                         )
                     }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(18.dp))
-
-        // Carátula real del álbum
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.85f)
-                .aspectRatio(1f)
-                .clip(RoundedCornerShape(16.dp))
-                .background(StudioSurfaceElevated)
-                .border(1.dp, StudioSurfaceBorder, RoundedCornerShape(16.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            if (currentSong.albumArtUri != null) {
-                val context = LocalContext.current
-                AsyncImage(
-                    model = remember(currentSong.albumArtUri) {
-                        ImageRequest.Builder(context)
-                            .data(currentSong.albumArtUri)
-                            .crossfade(true)
-                            .build()
-                    },
-                    contentDescription = "Carátula de ${currentSong.title}",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(StudioSurfaceElevated),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.GraphicEq,
-                        contentDescription = null,
-                        tint = StudioCobalt,
-                        modifier = Modifier.size(80.dp)
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Información de la pista y botón de favorito
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = currentSong.title,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = currentSong.artist,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = TextSecondary
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-                if (currentSong.album.isNotBlank() && currentSong.album != "Álbum Desconocido") {
-                    Text(
-                        text = currentSong.album,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = TextMuted,
-                            fontSize = 11.sp
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            IconButton(
-                onClick = { onToggleFavorite(currentSong) },
+            // 2. Portada cuadrada grande, centrada y adaptable al espacio disponible
+            val artworkMaxSize = (availableHeight * 0.42f).coerceIn(180.dp, 340.dp)
+            Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .testTag("toggle_favorite_button")
+                    .size(artworkMaxSize)
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(StudioSurfaceHighlight),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = if (currentSong.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = "Favorito",
-                    tint = if (currentSong.isFavorite) StudioCrimson else TextSecondary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(18.dp))
-
-        // Barra de progreso y tiempos
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Slider(
-                value = currentPosition.toFloat(),
-                onValueChange = {
-                    isUserScrubbing = true
-                    scrubPositionMs = it
-                },
-                onValueChangeFinished = {
-                    onSeek(scrubPositionMs.toLong())
-                    isUserScrubbing = false
-                },
-                valueRange = 0f..totalDuration.toFloat(),
-                colors = SliderDefaults.colors(
-                    thumbColor = MaterialTheme.colorScheme.primary,
-                    activeTrackColor = MaterialTheme.colorScheme.primary,
-                    inactiveTrackColor = StudioSurfaceBorder
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("player_timeline_slider")
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = formatTime(currentPosition),
-                    fontSize = 12.sp,
-                    color = TextSecondary,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = "-${formatTime(remainingMs)}",
-                    fontSize = 12.sp,
-                    color = TextSecondary,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // Controles principales de reproducción
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Modo Aleatorio
-            IconButton(
-                onClick = onToggleShuffle,
-                modifier = Modifier.testTag("player_shuffle_button")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Shuffle,
-                    contentDescription = "Aleatorio",
-                    tint = if (playerState.isShuffle) MaterialTheme.colorScheme.primary else TextMuted,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-
-            // Canción Anterior
-            IconButton(
-                onClick = onSkipToPrevious,
-                enabled = playerState.hasPrevious,
-                modifier = Modifier
-                    .size(controlSizeChoice.iconButtonDp.dp)
-                    .clip(CircleShape)
-                    .background(StudioSurfaceHighlight)
-                    .testTag("player_skip_previous_button")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.SkipPrevious,
-                    contentDescription = "Canción anterior",
-                    tint = if (playerState.hasPrevious) TextPrimary else TextMuted,
-                    modifier = Modifier.size((controlSizeChoice.iconButtonDp / 2 + 2).dp)
-                )
-            }
-
-            // Reproducir / Pausar
-            Button(
-                onClick = onTogglePlayPause,
-                modifier = Modifier
-                    .size(controlSizeChoice.playButtonDp.dp)
-                    .testTag("player_play_pause_button"),
-                shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = Color.Black
-                ),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
-            ) {
-                if (playerState.isBuffering) {
-                    CircularProgressIndicator(
-                        color = Color.Black,
-                        modifier = Modifier.size(26.dp),
-                        strokeWidth = 2.5.dp
+                if (currentSong.albumArtUri != null) {
+                    val context = LocalContext.current
+                    AsyncImage(
+                        model = remember(currentSong.albumArtUri) {
+                            ImageRequest.Builder(context)
+                                .data(currentSong.albumArtUri)
+                                .crossfade(true)
+                                .build()
+                        },
+                        contentDescription = "Carátula de ${currentSong.title}",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
                     )
                 } else {
-                    Icon(
-                        imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = if (playerState.isPlaying) "Pausar" else "Reproducir",
-                        modifier = Modifier.size((controlSizeChoice.playButtonDp / 2 + 2).dp)
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MusicNote,
+                            contentDescription = null,
+                            tint = MeloTurquoise.copy(alpha = 0.7f),
+                            modifier = Modifier.size(72.dp)
+                        )
+                    }
                 }
             }
 
-            // Canción Siguiente
-            IconButton(
-                onClick = onSkipToNext,
-                enabled = playerState.hasNext,
-                modifier = Modifier
-                    .size(controlSizeChoice.iconButtonDp.dp)
-                    .clip(CircleShape)
-                    .background(StudioSurfaceHighlight)
-                    .testTag("player_skip_next_button")
+            // Bloque inferior agrupado: Metadatos, Progreso, Controles y Volumen
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(
-                    imageVector = Icons.Default.SkipNext,
-                    contentDescription = "Canción siguiente",
-                    tint = if (playerState.hasNext) TextPrimary else TextMuted,
-                    modifier = Modifier.size((controlSizeChoice.iconButtonDp / 2 + 2).dp)
-                )
+                // 3. Título de la canción y artista, con favorito a un lado
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = currentSong.title,
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary,
+                                fontSize = 20.sp
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = currentSong.artist,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = TextSecondary,
+                                fontSize = 14.sp
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { onToggleFavorite(currentSong) },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .testTag("toggle_favorite_button")
+                    ) {
+                        Icon(
+                            imageVector = if (currentSong.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorito",
+                            tint = if (currentSong.isFavorite) StudioCrimson else TextSecondary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // 4. Barra de progreso delgada con tiempo transcurrido y duración
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Slider(
+                        value = currentPosition.toFloat(),
+                        onValueChange = {
+                            isUserScrubbing = true
+                            scrubPositionMs = it
+                        },
+                        onValueChangeFinished = {
+                            onSeek(scrubPositionMs.toLong())
+                            isUserScrubbing = false
+                        },
+                        valueRange = 0f..totalDuration.toFloat(),
+                        colors = SliderDefaults.colors(
+                            thumbColor = MeloTurquoise,
+                            activeTrackColor = MeloTurquoise,
+                            inactiveTrackColor = Color.White.copy(alpha = 0.12f)
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(20.dp)
+                            .testTag("player_timeline_slider")
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = formatTime(currentPosition),
+                            fontSize = 12.sp,
+                            color = TextSecondary,
+                            fontWeight = FontWeight.Normal
+                        )
+                        Text(
+                            text = "-${formatTime(remainingMs)}",
+                            fontSize = 12.sp,
+                            color = TextSecondary,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // 5. Controles en una sola fila: aleatorio, anterior, reproducir/pausar, siguiente y repetir
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Aleatorio
+                    IconButton(
+                        onClick = onToggleShuffle,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .testTag("player_shuffle_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Shuffle,
+                            contentDescription = "Aleatorio",
+                            tint = if (playerState.isShuffle) MeloTurquoise else TextSecondary.copy(alpha = 0.6f),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+
+                    // Anterior
+                    IconButton(
+                        onClick = onSkipToPrevious,
+                        enabled = playerState.hasPrevious,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .testTag("player_skip_previous_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SkipPrevious,
+                            contentDescription = "Anterior",
+                            tint = if (playerState.hasPrevious) TextPrimary else TextMuted,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    // Reproducir / Pausar destacado moderadamente en turquesa
+                    Button(
+                        onClick = onTogglePlayPause,
+                        modifier = Modifier
+                            .size(56.dp)
+                            .testTag("player_play_pause_button"),
+                        shape = CircleShape,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MeloTurquoise,
+                            contentColor = Color.Black
+                        ),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+                    ) {
+                        if (playerState.isBuffering) {
+                            CircularProgressIndicator(
+                                color = Color.Black,
+                                modifier = Modifier.size(22.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = if (playerState.isPlaying) "Pausar" else "Reproducir",
+                                modifier = Modifier.size(30.dp)
+                            )
+                        }
+                    }
+
+                    // Siguiente
+                    IconButton(
+                        onClick = onSkipToNext,
+                        enabled = playerState.hasNext,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .testTag("player_skip_next_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SkipNext,
+                            contentDescription = "Siguiente",
+                            tint = if (playerState.hasNext) TextPrimary else TextMuted,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    // Repetir
+                    IconButton(
+                        onClick = onToggleRepeatMode,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .testTag("player_repeat_button")
+                    ) {
+                        Icon(
+                            imageVector = when (playerState.repeatMode) {
+                                PlayerRepeatMode.ONE -> Icons.Default.RepeatOne
+                                else -> Icons.Default.Repeat
+                            },
+                            contentDescription = "Repetir",
+                            tint = if (playerState.repeatMode != PlayerRepeatMode.OFF) MeloTurquoise else TextSecondary.copy(alpha = 0.6f),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // 6. Controles secundarios discretos (Volumen)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .height(30.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.VolumeDown,
+                        contentDescription = null,
+                        tint = TextSecondary.copy(alpha = 0.6f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Slider(
+                        value = playerState.volume,
+                        onValueChange = onVolumeChanged,
+                        valueRange = 0f..1f,
+                        colors = SliderDefaults.colors(
+                            thumbColor = TextSecondary,
+                            activeTrackColor = TextSecondary.copy(alpha = 0.6f),
+                            inactiveTrackColor = Color.White.copy(alpha = 0.08f)
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 8.dp)
+                    )
+                    Icon(
+                        imageVector = Icons.Default.VolumeUp,
+                        contentDescription = null,
+                        tint = TextSecondary.copy(alpha = 0.6f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
             }
-
-            // Modo Repetición
-            IconButton(
-                onClick = onToggleRepeatMode,
-                modifier = Modifier.testTag("player_repeat_button")
-            ) {
-                Icon(
-                    imageVector = when (playerState.repeatMode) {
-                        PlayerRepeatMode.ONE -> Icons.Default.RepeatOne
-                        PlayerRepeatMode.ALL -> Icons.Default.Repeat
-                        PlayerRepeatMode.OFF -> Icons.Default.Repeat
-                    },
-                    contentDescription = "Repetición",
-                    tint = if (playerState.repeatMode != PlayerRepeatMode.OFF) MaterialTheme.colorScheme.primary else TextMuted,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Fader de volumen discreto
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Default.VolumeDown, contentDescription = null, tint = TextMuted, modifier = Modifier.size(16.dp))
-            Slider(
-                value = playerState.volume,
-                onValueChange = onVolumeChanged,
-                valueRange = 0f..1f,
-                colors = SliderDefaults.colors(
-                    thumbColor = TextPrimary,
-                    activeTrackColor = TextSecondary,
-                    inactiveTrackColor = StudioSurfaceBorder
-                ),
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 8.dp)
-            )
-            Icon(Icons.Default.VolumeUp, contentDescription = null, tint = TextMuted, modifier = Modifier.size(16.dp))
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Botón para desplegar la cola de reproducción
-        TextButton(
-            onClick = { showQueueSheet = true },
-            modifier = Modifier.testTag("open_queue_button")
-        ) {
-            Icon(
-                imageVector = Icons.Default.QueueMusic,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = "Cola de reproducción (${playerState.queue.size})",
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium
-            )
         }
     }
 
@@ -588,7 +590,7 @@ fun PlayerScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showSleepTimerDialog = false }) {
-                    Text("Cerrar", color = StudioCobalt)
+                    Text("Cerrar", color = MeloTurquoise)
                 }
             }
         )

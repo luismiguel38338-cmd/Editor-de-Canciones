@@ -19,20 +19,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CleaningServices
-import androidx.compose.material.icons.filled.ColorLens
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Equalizer
+import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Memory
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -43,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -77,345 +73,176 @@ fun SettingsScreen(
             .fillMaxSize()
             .background(StudioBg)
             .verticalScroll(scrollState)
-            .padding(horizontal = 20.dp, vertical = 16.dp)
+            .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        // Título
+        // Título limpio
         Text(
-            text = "Ajustes y Personalización",
-            style = MaterialTheme.typography.headlineSmall.copy(
+            text = "Ajustes",
+            style = MaterialTheme.typography.titleLarge.copy(
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary
             )
         )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // SECCIÓN: APARIENCIA
+        SectionHeader("Apariencia y Tema")
+
+        // Modo de tema
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            AppThemeMode.values().forEach { mode ->
+                FilterChip(
+                    selected = themeMode == mode,
+                    onClick = { onThemeModeChanged(mode) },
+                    label = { Text(mode.displayName, fontSize = 12.sp) },
+                    modifier = Modifier.weight(1f),
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MeloTurquoise.copy(alpha = 0.2f),
+                        selectedLabelColor = MeloTurquoise,
+                        containerColor = StudioSurface,
+                        labelColor = TextSecondary
+                    ),
+                    border = null
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Color de acento
         Text(
-            text = "Personaliza la apariencia y el comportamiento de MeloTune",
-            style = MaterialTheme.typography.bodySmall.copy(
-                color = TextSecondary
-            )
+            text = "Color de Acento",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = TextPrimary
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AccentColorChoice.values().forEach { choice ->
+                val isSelected = accentColorChoice == choice
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .clickable { onAccentColorChanged(choice) }
+                        .padding(4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(choice.color)
+                            .border(
+                                width = if (isSelected) 2.5.dp else 0.dp,
+                                color = if (isSelected) Color.White else Color.Transparent,
+                                shape = CircleShape
+                            )
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = choice.displayName.substringBefore(" "),
+                        fontSize = 10.sp,
+                        color = if (isSelected) MeloTurquoise else TextSecondary,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+        HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // SECCIÓN: REPRODUCCIÓN Y SONIDO
+        SectionHeader("Reproducción y Sonido")
+
+        CleanSettingItem(
+            icon = Icons.Default.Equalizer,
+            title = "Ecualizador Biquad IIR",
+            subtitle = "Ajuste de graves, medios, agudos y refuerzo activo"
+        )
+
+        CleanSettingItem(
+            icon = Icons.Default.Headphones,
+            title = "Pausa con Auriculares",
+            subtitle = "Pausa la reproducción automáticamente al desconectar"
         )
 
         Spacer(modifier = Modifier.height(20.dp))
+        HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // SECCIÓN: PERSONALIZACIÓN VISUAL
-        SectionTitle(title = "Apariencia y Tema")
+        // SECCIÓN: ALMACENAMIENTO Y BIBLIOTECA
+        SectionHeader("Biblioteca y Almacenamiento")
 
-        Box(
+        CleanSettingItem(
+            icon = Icons.Default.Security,
+            title = "Archivos de Audio Intactos",
+            subtitle = "MeloTune lee los archivos sin alterar tus grabaciones originales"
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        OutlinedButton(
+            onClick = onClearCache,
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(StudioSurface)
-                .border(1.dp, StudioSurfaceBorder, RoundedCornerShape(12.dp))
-                .padding(16.dp)
+                .height(40.dp)
+                .testTag("clear_cache_button"),
+            shape = RoundedCornerShape(8.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, StudioSurfaceBorder),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = TextPrimary,
+                containerColor = StudioSurface
+            )
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                // Modo de Tema
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.DarkMode,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = "Modo de Pantalla",
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary,
-                            fontSize = 14.sp
-                        )
-                        Text(
-                            text = "Elige la estética visual general",
-                            color = TextSecondary,
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    AppThemeMode.values().forEach { mode ->
-                        FilterChip(
-                            selected = themeMode == mode,
-                            onClick = { onThemeModeChanged(mode) },
-                            label = { Text(mode.displayName, fontSize = 12.sp) },
-                            modifier = Modifier.weight(1f),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                selectedLabelColor = MaterialTheme.colorScheme.primary,
-                                containerColor = StudioSurfaceElevated,
-                                labelColor = TextSecondary
-                            ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = themeMode == mode,
-                                borderColor = StudioSurfaceBorder,
-                                selectedBorderColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                // Selector de Color de Acento
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Palette,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = "Color de Acento",
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary,
-                            fontSize = 14.sp
-                        )
-                        Text(
-                            text = "Acento para botones, controles y luces de estado",
-                            color = TextSecondary,
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    AccentColorChoice.values().forEach { choice ->
-                        val isSelected = accentColorChoice == choice
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .clickable { onAccentColorChanged(choice) }
-                                .padding(4.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(choice.color)
-                                    .border(
-                                        width = if (isSelected) 3.dp else 1.dp,
-                                        color = if (isSelected) Color.White else StudioSurfaceBorder,
-                                        shape = CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (isSelected) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = "Seleccionado",
-                                        tint = if (choice == AccentColorChoice.TURQUOISE || choice == AccentColorChoice.AMBER) Color.Black else Color.White,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = choice.displayName.substringBefore(" "),
-                                fontSize = 10.sp,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else TextSecondary,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                // Selector de Tamaño de Controles
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.TouchApp,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = "Tamaño de Controles Multimedia",
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary,
-                            fontSize = 14.sp
-                        )
-                        Text(
-                            text = "Dimensiones de botones de reproducción en pantalla principal",
-                            color = TextSecondary,
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    ControlSizeChoice.values().forEach { sizeChoice ->
-                        FilterChip(
-                            selected = controlSizeChoice == sizeChoice,
-                            onClick = { onControlSizeChanged(sizeChoice) },
-                            label = { Text(sizeChoice.displayName, fontSize = 12.sp) },
-                            modifier = Modifier.weight(1f),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                selectedLabelColor = MaterialTheme.colorScheme.primary,
-                                containerColor = StudioSurfaceElevated,
-                                labelColor = TextSecondary
-                            ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = controlSizeChoice == sizeChoice,
-                                borderColor = StudioSurfaceBorder,
-                                selectedBorderColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-                    }
-                }
-            }
+            Icon(
+                imageVector = Icons.Default.CleaningServices,
+                contentDescription = null,
+                modifier = Modifier.size(15.dp),
+                tint = MeloTurquoise
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Optimizar memoria y caché",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
 
         Spacer(modifier = Modifier.height(20.dp))
+        HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // SECCIÓN: MOTOR DE PROCESAMIENTO
-        SectionTitle(title = "Motor de Audio & DSP")
+        // SECCIÓN: INFORMACIÓN
+        SectionHeader("Información")
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(StudioSurface)
-                .border(1.dp, StudioSurfaceBorder, RoundedCornerShape(12.dp))
-                .padding(16.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                SettingRow(
-                    icon = Icons.Default.MusicNote,
-                    title = "Formato de Exportación",
-                    subtitle = "WAV 16-bit PCM sin compresión (Fidelidad acústica total)",
-                    trailingValue = "WAV"
-                )
-
-                SettingRow(
-                    icon = Icons.Default.Memory,
-                    title = "Procesador de Tono y Velocidad",
-                    subtitle = "Sonic DSP (Time-stretching continuo y pitch-shifting armónico)",
-                    trailingValue = "Sonic"
-                )
-
-                SettingRow(
-                    icon = Icons.Default.Memory,
-                    title = "Filtro de Ecualización",
-                    subtitle = "Filtros IIR Biquad Direct Form II (Graves, Medios, Agudos)",
-                    trailingValue = "Biquad"
-                )
+            Column {
+                Text("MeloTune", fontWeight = FontWeight.Bold, color = TextPrimary, fontSize = 15.sp)
+                Text("Reproductor musical para Android", color = TextSecondary, fontSize = 12.sp)
             }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // SECCIÓN: ALMACENAMIENTO Y SEGURIDAD
-        SectionTitle(title = "Almacenamiento y Protección de Datos")
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(StudioSurface)
-                .border(1.dp, StudioSurfaceBorder, RoundedCornerShape(12.dp))
-                .padding(16.dp)
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                SettingRow(
-                    icon = Icons.Default.Folder,
-                    title = "Ruta de Guardado de Exportaciones",
-                    subtitle = "Almacenamiento compartido / Música / MeloTune",
-                    trailingValue = null
-                )
-
-                SettingRow(
-                    icon = Icons.Default.Security,
-                    title = "Protección de Archivos Originales",
-                    subtitle = "Tus archivos originales de música permanecen estrictamente intactos. Las ediciones se guardan como copias separadas.",
-                    trailingValue = "Seguro"
-                )
-
-                // Botón para limpiar archivos temporales
-                OutlinedButton(
-                    onClick = onClearCache,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(44.dp)
-                        .testTag("clear_cache_button"),
-                    shape = RoundedCornerShape(8.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, StudioSurfaceBorder),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = TextPrimary,
-                        containerColor = StudioSurfaceElevated
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CleaningServices,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Limpiar archivos de renderizado temporales",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // SECCIÓN: ACERCA DE LA APLICACIÓN
-        SectionTitle(title = "Acerca de MeloTune")
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(StudioSurface)
-                .border(1.dp, StudioSurfaceBorder, RoundedCornerShape(12.dp))
-                .padding(16.dp)
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("MeloTune", fontWeight = FontWeight.Bold, color = TextPrimary, fontSize = 16.sp)
-                    Surface(
-                        color = StudioSurfaceHighlight,
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Text(
-                            text = "v1.0 Producción",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                        )
-                    }
-                }
-
+            Surface(
+                color = StudioSurfaceHighlight,
+                shape = RoundedCornerShape(6.dp)
+            ) {
                 Text(
-                    text = "Reproductor musical y estudio de audio desarrollado con Kotlin, Jetpack Compose, Material 3 y AndroidX Media3.",
-                    color = TextSecondary,
-                    fontSize = 12.sp
+                    text = "V2 Oficial",
+                    color = MeloTurquoise,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                 )
             }
         }
@@ -425,27 +252,28 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SectionTitle(title: String) {
+private fun SectionHeader(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.titleSmall.copy(
-            color = MaterialTheme.colorScheme.primary,
+            color = MeloTurquoise,
             fontWeight = FontWeight.Bold,
-            letterSpacing = 0.5.sp
+            fontSize = 13.sp
         ),
-        modifier = Modifier.padding(bottom = 8.dp)
+        modifier = Modifier.padding(bottom = 10.dp)
     )
 }
 
 @Composable
-private fun SettingRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+private fun CleanSettingItem(
+    icon: ImageVector,
     title: String,
-    subtitle: String,
-    trailingValue: String?
+    subtitle: String
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -458,7 +286,7 @@ private fun SettingRow(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MeloTurquoise,
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -478,22 +306,6 @@ private fun SettingRow(
                 color = TextSecondary,
                 lineHeight = 15.sp
             )
-        }
-
-        if (trailingValue != null) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Surface(
-                color = StudioSurfaceHighlight,
-                shape = RoundedCornerShape(6.dp)
-            ) {
-                Text(
-                    text = trailingValue,
-                    color = TextPrimary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                )
-            }
         }
     }
 }

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
@@ -28,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -38,8 +38,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.data.model.Song
-import com.example.ui.theme.StudioCobalt
-import com.example.ui.theme.StudioSurfaceBorder
+import com.example.ui.theme.MeloTurquoise
 import com.example.ui.theme.StudioSurfaceElevated
 import com.example.ui.theme.StudioSurfaceHighlight
 import com.example.ui.theme.TextPrimary
@@ -63,37 +62,36 @@ fun MiniPlayerBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
             .background(StudioSurfaceElevated)
             .clickable(onClick = onOpenPlayer)
             .testTag("mini_player_bar")
     ) {
-        // Línea fina de progreso
+        // Línea sutil de progreso turquesa
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(2.5.dp)
-                .background(StudioSurfaceBorder)
+                .height(2.dp)
+                .background(Color.White.copy(alpha = 0.08f))
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth(fraction = progress)
-                    .height(2.5.dp)
-                    .background(MaterialTheme.colorScheme.primary)
+                    .height(2.dp)
+                    .background(MeloTurquoise)
             )
         }
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Mini carátula
+            // Portada pequeña
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(6.dp))
                     .background(StudioSurfaceHighlight),
                 contentAlignment = Alignment.Center
             ) {
@@ -106,7 +104,7 @@ fun MiniPlayerBar(
                                 .crossfade(true)
                                 .build()
                         },
-                        contentDescription = "Carátula",
+                        contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
@@ -114,13 +112,13 @@ fun MiniPlayerBar(
                     Icon(
                         imageVector = Icons.Default.MusicNote,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
+                        tint = MeloTurquoise,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
             // Título y artista
             Column(modifier = Modifier.weight(1f)) {
@@ -137,7 +135,7 @@ fun MiniPlayerBar(
                     text = song.artist,
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = TextSecondary,
-                        fontSize = 12.sp
+                        fontSize = 11.sp
                     ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -148,9 +146,7 @@ fun MiniPlayerBar(
             IconButton(
                 onClick = onTogglePlayPause,
                 modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(StudioSurfaceHighlight)
+                    .size(36.dp)
                     .testTag("mini_player_play_pause")
             ) {
                 Icon(
@@ -161,20 +157,18 @@ fun MiniPlayerBar(
                 )
             }
 
-            Spacer(modifier = Modifier.width(4.dp))
-
             // Siguiente canción
             IconButton(
                 onClick = onSkipToNext,
                 modifier = Modifier
-                    .size(38.dp)
+                    .size(36.dp)
                     .testTag("mini_player_skip_next")
             ) {
                 Icon(
                     imageVector = Icons.Default.SkipNext,
                     contentDescription = "Siguiente canción",
                     tint = TextSecondary,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
